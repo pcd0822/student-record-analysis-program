@@ -1,5 +1,6 @@
 import {
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as fbSignOut,
   onAuthStateChanged,
   type User,
@@ -9,19 +10,32 @@ import { doc, getDoc } from 'firebase/firestore';
 import { getAuthInstance, getDb, GoogleAuthProvider } from './config';
 
 const ALLOWED_USERS_COLLECTION = 'allowedUsers';
+const ALLOWED_EMAILS_COLLECTION = 'allowedEmails';
 
-/** 승인된 사용자만 사용 가능 — Firestore allowedUsers/{uid} 문서 존재 여부로 판단 */
-export async function isUserAllowed(uid: string): Promise<boolean> {
+/** 승인된 사용자만 사용 가능 — allowedUsers/{uid} 또는 allowedEmails/{이메일} 문서 존재 여부로 판단 */
+export async function isUserAllowed(user: User): Promise<boolean> {
   const db = getDb();
-  const ref = doc(db, ALLOWED_USERS_COLLECTION, uid);
-  const snap = await getDoc(ref);
-  return snap.exists();
+  const uidRef = doc(db, ALLOWED_USERS_COLLECTION, user.uid);
+  const uidSnap = await getDoc(uidRef);
+  if (uidSnap.exists()) return true;
+  const email = user.email?.trim().toLowerCase();
+  if (!email) return false;
+  const emailRef = doc(db, ALLOWED_EMAILS_COLLECTION, email);
+  const emailSnap = await getDoc(emailRef);
+  return emailSnap.exists();
 }
 
-export function signInWithGoogle(): Promise<User | null> {
+/** 구글 로그인 — 리다이렉트 방식(COOP 오류 방지) */
+export function signInWithGoogle(): void {
   const auth = getAuthInstance();
   const provider = new GoogleAuthProvider();
-  return signInWithPopup(auth, provider).then((r) => r.user);
+  signInWithRedirect(auth, provider);
+}
+
+/** 리다이렉트 후 돌아왔을 때 결과 처리. 로그인 페이지 마운트 시 한 번 호출 */
+export function handleRedirectResult(): Promise<User | null> {
+  const auth = getAuthInstance();
+  return getRedirectResult(auth).then((result) => result?.user ?? null);
 }
 
 export function signOut(): Promise<void> {

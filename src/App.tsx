@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { initFirebase } from '@/firebase/config';
-import { subscribeAuth, isUserAllowed } from '@/firebase/auth';
+import { subscribeAuth, isUserAllowed, handleRedirectResult } from '@/firebase/auth';
 import type { User } from 'firebase/auth';
 import Layout from '@/components/Layout';
 import Login from '@/pages/Login';
@@ -11,7 +11,15 @@ import Dashboard from '@/pages/Dashboard';
 
 initFirebase();
 
+// 구글 로그인 리다이렉트 후 돌아왔을 때 결과 처리 (COOP 대응)
+function useRedirectResult() {
+  useEffect(() => {
+    handleRedirectResult().catch(() => {});
+  }, []);
+}
+
 function RequireAuth({ children }: { children: React.ReactNode }) {
+  useRedirectResult();
   const [user, setUser] = useState<User | null>(null);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +32,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
         setLoading(false);
         return;
       }
-      const ok = await isUserAllowed(u.uid);
+      const ok = await isUserAllowed(u);
       setAllowed(ok);
       setLoading(false);
     });

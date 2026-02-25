@@ -3,10 +3,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 승인된 사용자 목록: 각 사용자는 자신의 문서만 읽기 가능 (로그인 후 사용 허용 여부 확인용)
-    // 문서 추가/수정/삭제는 Firebase 콘솔 또는 Admin SDK로만 수행
+    // 승인된 사용자(UID): 각 사용자는 자신의 문서만 읽기 가능
     match /allowedUsers/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // 승인된 이메일: 문서 ID = 이메일(소문자로 등록 권장). 해당 이메일 사용자만 읽기 가능
+    match /allowedEmails/{email} {
+      allow read: if request.auth != null && request.auth.token.email != null
+        && request.auth.token.email == email;
       allow write: if false;
     }
 

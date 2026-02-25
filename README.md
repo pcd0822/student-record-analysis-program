@@ -4,7 +4,7 @@
 
 ## 1단계 구현 내용
 
-- **구글 로그인**: Firebase Auth. 사용 가능 계정은 Firestore `allowedUsers/{uid}` 문서로 승인.
+- **구글 로그인**: Firebase Auth(리다이렉트 방식). 사용 가능 계정은 Firestore **allowedUsers(UID)** 또는 **allowedEmails(이메일)** 로 승인.
 - **생기부 업로드**: HTML 파일 업로드 → 파싱 → 영역/학년별·전체 테이블로 표시. **학번만 입력** (이름 미저장).
 - **나이스+ 형식**: 나이스+(neisplus.kr)에서 저장한 HTML은 전용 파서로 자동 인식해, 창의적 체험활동(자율/동아리/봉사/진로)·교과 세특·학적사항 등 영역/학년/과목별로 추출합니다.
 - **저장**: Firestore `records` 컬렉션에 학번을 문서 ID로 저장.
@@ -27,11 +27,11 @@ npm run dev
 3. Firestore Database 생성.
 4. 프로젝트 설정 → 일반 → 앱 추가(웹) → 설정 값 복사 후 `.env`에 넣기.
 
-### Firestore 승인 사용자
+### Firestore 승인 사용자 (둘 중 하나만 있어도 사용 가능)
 
-- 컬렉션: `allowedUsers`
-- 문서 ID: 사용자 UID (구글 로그인 후 Firebase Auth UID)
-- 해당 UID로 문서가 있으면 로그인 후 앱 사용 가능. (필드 내용은 비어 있어도 됨)
+- **UID 방식**: 컬렉션 `allowedUsers` → 문서 ID = 사용자 UID (Authentication → Users에서 확인)
+- **이메일 방식**: 컬렉션 `allowedEmails` → 문서 ID = 허용할 이메일 주소 (소문자 권장, 예: `user@gmail.com`)
+- 문서 내용은 비어 있어도 됨. Firebase 콘솔에서 해당 컬렉션에 문서만 추가하면 됨.
 
 ### Firestore 인덱스
 
