@@ -1,4 +1,5 @@
 import {
+  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   signOut as fbSignOut,
@@ -25,8 +26,15 @@ export async function isUserAllowed(user: User): Promise<boolean> {
   return emailSnap.exists();
 }
 
-/** 구글 로그인 — 리다이렉트 방식(COOP 오류 방지) */
-export function signInWithGoogle(): void {
+/** 구글 로그인 — 팝업 방식 (Chrome M115+ 리다이렉트 제한 회피, 권장) */
+export function signInWithGooglePopup(): Promise<User | null> {
+  const auth = getAuthInstance();
+  const provider = new GoogleAuthProvider();
+  return signInWithPopup(auth, provider).then((result) => result.user ?? null);
+}
+
+/** 구글 로그인 — 리다이렉트 방식 (팝업 차단 시 대체용) */
+export function signInWithGoogleRedirect(): void {
   const auth = getAuthInstance();
   const provider = new GoogleAuthProvider();
   signInWithRedirect(auth, provider);
