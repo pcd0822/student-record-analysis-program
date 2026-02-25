@@ -11,32 +11,39 @@ import Dashboard from '@/pages/Dashboard';
 
 initFirebase();
 
-// 구글 로그인 리다이렉트 후 돌아왔을 때 결과 처리 (COOP 대응)
-function useRedirectResult() {
-  useEffect(() => {
-    handleRedirectResult().catch(() => {});
-  }, []);
-}
-
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  useRedirectResult();
   const [user, setUser] = useState<User | null>(null);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = subscribeAuth(async (u) => {
-      setUser(u);
-      if (!u) {
-        setAllowed(false);
+    let cancelled = false;
+    let unsub: (() => void) | undefined;
+
+    const run = async () => {
+      // 리다이렉트 후 돌아온 경우 결과를 먼저 처리해야 함 (처리 전에는 currentUser가 null로 나옴)
+      await handleRedirectResult();
+      if (cancelled) return;
+      unsub = subscribeAuth(async (u) => {
+        if (cancelled) return;
+        setUser(u);
+        if (!u) {
+          setAllowed(false);
+          setLoading(false);
+          return;
+        }
+        const ok = await isUserAllowed(u);
+        setAllowed(ok);
         setLoading(false);
-        return;
-      }
-      const ok = await isUserAllowed(u);
-      setAllowed(ok);
-      setLoading(false);
+      });
+    };
+    run().catch(() => {
+      if (!cancelled) setLoading(false);
     });
-    return () => unsub();
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
   }, []);
 
   if (loading) {
