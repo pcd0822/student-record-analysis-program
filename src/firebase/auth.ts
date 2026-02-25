@@ -32,10 +32,15 @@ export function signInWithGoogle(): void {
   signInWithRedirect(auth, provider);
 }
 
-/** 리다이렉트 후 돌아왔을 때 결과 처리. 로그인 페이지 마운트 시 한 번 호출 */
+/** 리다이렉트 결과는 페이지당 한 번만 소비되므로 캐시 (여러 컴포넌트/StrictMode 대응) */
+let redirectResultPromise: Promise<User | null> | null = null;
+
+/** 리다이렉트 후 돌아왔을 때 결과 처리. 앱 전체에서 한 번만 실제 호출됨 */
 export function handleRedirectResult(): Promise<User | null> {
+  if (redirectResultPromise !== null) return redirectResultPromise;
   const auth = getAuthInstance();
-  return getRedirectResult(auth).then((result) => result?.user ?? null);
+  redirectResultPromise = getRedirectResult(auth).then((result) => result?.user ?? null);
+  return redirectResultPromise;
 }
 
 export function signOut(): Promise<void> {

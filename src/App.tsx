@@ -20,22 +20,37 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     let unsub: (() => void) | undefined;
 
-    const run = async () => {
-      // 리다이렉트 후 돌아온 경우 결과를 먼저 처리해야 함 (처리 전에는 currentUser가 null로 나옴)
-      await handleRedirectResult();
+    const applyUser = async (u: User | null) => {
       if (cancelled) return;
-      unsub = subscribeAuth(async (u) => {
-        if (cancelled) return;
-        setUser(u);
-        if (!u) {
-          setAllowed(false);
-          setLoading(false);
-          return;
-        }
-        const ok = await isUserAllowed(u);
-        setAllowed(ok);
+      setUser(u);
+      if (!u) {
+        setAllowed(false);
         setLoading(false);
-      });
+        return;
+      }
+      const ok = await isUserAllowed(u);
+      if (cancelled) return;
+      setAllowed(ok);
+      setLoading(false);
+    };
+
+    const run = async () => {
+      // 리다이렉트 후 돌아온 경우 결과를 먼저 처리 (onAuthStateChanged가 null로 먼저 올 수 있음)
+      const redirectUser = await handleRedirectResult();
+      if (cancelled) return;
+      if (redirectUser) {
+        // 리다이렉트로 받은 유저는 즉시 사용 (콜백 순서에 의존하지 않음)
+        await applyUser(redirectUser);
+        if (cancelled) return;
+        unsub = subscribeAuth((u) => {
+          if (cancelled) return;
+          setUser(u);
+          if (u) isUserAllowed(u).then((ok) => { if (!cancelled) setAllowed(ok); });
+          else setAllowed(false);
+        });
+        return;
+      }
+      unsub = subscribeAuth(applyUser);
     };
     run().catch(() => {
       if (!cancelled) setLoading(false);
