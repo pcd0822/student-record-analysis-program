@@ -89,10 +89,16 @@ function extractFromTables(doc: Document): { text: string; context: string }[] {
   return results;
 }
 
+import { isNeisPlusFormat, parseNeisPlusHtml } from './neisPlusParser';
+
 /**
- * 생기부 HTML 전체에서 기록 항목 배열로 파싱
+ * 생기부 HTML 전체에서 기록 항목 배열로 파싱.
+ * 나이스+ 형식이면 전용 파서를 사용하고, 아니면 일반 테이블/텍스트 파서를 사용합니다.
  */
 export function parseLifeRecordHtml(html: string): RecordItem[] {
+  if (isNeisPlusFormat(html)) {
+    return parseNeisPlusHtml(html);
+  }
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const fromTables = extractFromTables(doc);

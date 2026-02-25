@@ -82,7 +82,7 @@ export default function View() {
               {selectedId && loadingDetail && (
                 <p>로딩 중…</p>
               )}
-              {selectedId && !loadingDetail && detail && (
+              {selectedId && !loadingDetail && detail !== null ? (
                 <>
                   <div className={styles.detailHeader}>
                     <span>학번: {selectedId}</span>
@@ -92,7 +92,7 @@ export default function View() {
                   </div>
                   <pre className={styles.rawJson}>{JSON.stringify(detail, null, 2)}</pre>
                 </>
-              )}
+              ) : null}
               {selectedId && !loadingDetail && !detail && (
                 <p>해당 학번의 데이터를 찾을 수 없습니다.</p>
               )}

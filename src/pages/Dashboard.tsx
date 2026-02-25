@@ -2,6 +2,9 @@ import { useParams, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getRecordByStudentId } from '@/firebase/records';
 import type { StudentRecordDoc } from '@/types';
+import WordCloudSection from '@/components/dashboard/WordCloudSection';
+import GraphSection from '@/components/dashboard/GraphSection';
+import CompetencySection from '@/components/dashboard/CompetencySection';
 import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
@@ -49,6 +52,8 @@ export default function Dashboard() {
     return acc;
   }, {});
 
+  const hasDrafts = doc.items.some((it) => it.draftContent);
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -61,10 +66,14 @@ export default function Dashboard() {
         </p>
       </div>
 
+      <WordCloudSection items={doc.items} />
+      <GraphSection items={doc.items} />
+      <CompetencySection items={doc.items} />
+
       <section className={styles.section}>
-        <h2>기록 요약 (영역별)</h2>
+        <h2>기록 요약 (영역별) · 자세히 보기</h2>
         <p className={styles.hint}>
-          워드 클라우드, 연결관계 그래프, 역량 진단 등은 다음 단계에서 추가됩니다.
+          아래 표에서 해당 생기부 기록을 확인할 수 있습니다.
         </p>
         {Object.entries(byArea).map(([area, list]) => (
           <div key={area} className={styles.block}>
@@ -75,6 +84,7 @@ export default function Dashboard() {
                   <th>학년</th>
                   <th>구분</th>
                   <th>내용</th>
+                  {hasDrafts && <th>초안</th>}
                 </tr>
               </thead>
               <tbody>
@@ -83,6 +93,9 @@ export default function Dashboard() {
                     <td>{it.grade ? `${it.grade}학년` : '-'}</td>
                     <td>{it.subCategory || it.label || '-'}</td>
                     <td className={styles.cellContent}>{it.content}</td>
+                    {hasDrafts && (
+                      <td className={styles.cellContent}>{it.draftContent ?? '-'}</td>
+                    )}
                   </tr>
                 ))}
               </tbody>

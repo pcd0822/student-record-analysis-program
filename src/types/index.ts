@@ -8,10 +8,12 @@ export interface RecordItem {
   grade?: number;
   /** 원본 라벨/제목 (테이블 헤더 등) */
   label?: string;
-  /** 기록 내용 */
+  /** 기록 내용 (개인정보 삭제·수정 반영 가능) */
   content: string;
   /** 원본 HTML에서의 순서/위치 식별용 */
   order?: number;
+  /** AI가 생성한 초안 문장 (분석하기 후) */
+  draftContent?: string;
 }
 
 /** 업로드 후 파싱된 생기부 데이터 (학번과 함께 저장) */
@@ -31,4 +33,14 @@ export interface StudentRecordDoc {
   createdAt: string;
   updatedAt: string;
   createdBy: string; // uid
+}
+
+/** 분석 API 요청: 개인정보 삭제된 항목들 */
+export interface AnalyzeRequest {
+  items: RecordItem[];
+}
+
+/** 분석 API 응답: 항목별 초안이 붙은 목록 */
+export interface AnalyzeResponse {
+  itemsWithDrafts: (RecordItem & { draftContent: string })[];
 }
