@@ -1,0 +1,70 @@
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fc;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #1a1d29;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav a,
+.navLink {
+  color: #b4b8c5;
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+.nav a:hover,
+.navLink:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav a.navActive,
+.navActive {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.logout {
+  margin-left: auto;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.logout:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.main {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
