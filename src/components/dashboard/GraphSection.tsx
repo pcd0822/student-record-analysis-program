@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { getGraphConnections, type GraphNode } from '@/api/graph';
 import type { RecordItem } from '@/types';
@@ -6,16 +6,28 @@ import styles from './GraphSection.module.css';
 
 interface Props {
   items: RecordItem[];
+  autoRun?: boolean;
 }
 
 interface GraphData {
   nodes: { id: string; label: string; itemIndex: number; itemIndices?: number[] }[];
-  links: { source: string; target: string; reason: string }[];
+  links: { source: string; target: string; reason: string; strength?: number }[];
 }
 
-export default function GraphSection({ items }: Props) {
+function groupByActivity(items: RecordItem[]): { area: string; sub: string; itemIndices: number[] }[] {
+  const map = new Map<string, { area: string; sub: string; itemIndices: number[] }>();
+  items.forEach((it, idx) => {
+    const area = it.area || '기타';
+    const sub = it.subCategory || it.label || '기타';
+    const key = `${area}|${sub}`;
+    if (!map.has(key)) map.set(key, { area, sub, itemIndices: [] });
+    map.get(key)!.itemIndices.push(idx);
+  });
+  return Array.from(map.values());
+}
+
+export default function GraphSection({ items, autoRun = true }: Props) {
   const [graph, setGraph] = useState<GraphData | null>(null);
-  const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<number | null>(null);
@@ -27,15 +39,20 @@ export default function GraphSection({ items }: Props) {
     }
     setLoading(true);
     setError(null);
-    getGraphConnections(items, prompt || undefined)
+    getGraphConnections(items)
       .then(({ nodes, links }) => {
         setGraph({ nodes, links });
         setSelectedNode(null);
       })
       .catch((e) => setError(e instanceof Error ? e.message : '분석 실패'))
       .finally(() => setLoading(false));
-  }, [items, prompt]);
+  }, [items]);
 
+  useEffect(() => {
+    if (autoRun && items.length > 0 && !graph && !loading && !error) run();
+  }, [autoRun, items.length, run, graph, loading, error]);
+
+  const activities = groupByActivity(items);
   const selectedNodeData = graph && selectedNode != null ? graph.nodes.find((n) => n.id === String(selectedNode)) : null;
   const selectedItemIndices = selectedNodeData?.itemIndices ?? (selectedNode != null ? [selectedNode] : []);
   const connectedActivityIndices = new Set<number>();
@@ -48,40 +65,77 @@ export default function GraphSection({ items }: Props) {
     });
   }
 
+  const linkCountByNode = new Map<string, number>();
+  graph?.links.forEach((l) => {
+    const s = String(l.source);
+    const t = String(l.target);
+    linkCountByNode.set(s, (linkCountByNode.get(s) ?? 0) + 1);
+    linkCountByNode.set(t, (linkCountByNode.get(t) ?? 0) + 1);
+  });
+  const maxLinks = Math.max(...linkCountByNode.values(), 1);
+
   return (
     <section className={styles.section}>
-      <h2>활동 연결관계 그래프</h2>
+      <h2>활동 연결관계</h2>
       <p className={styles.hint}>
-        생기부 항목 간 연관성을 분석해 옵시디언 스타일 그래프로 표시합니다. 연결 기준은 아래 프롬프트로 조정할 수 있습니다.
+        키워드·활동 주제·활동 내용 기준으로 연결 관계를 분석합니다. 연결이 많은 노드는 굵게 표시됩니다.
       </p>
-      <textarea
-        className={styles.textarea}
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder="연결망 형성 기준을 설명하는 프롬프트 (선택)"
-        rows={2}
-      />
-      <button type="button" onClick={run} disabled={loading || items.length === 0} className={styles.btn}>
-        {loading ? '분석 중…' : '연결관계 분석'}
-      </button>
+      {loading && <p className={styles.loading}>연결관계 분석 중…</p>}
       {error && <p className={styles.error}>{error}</p>}
       {graph && graph.nodes.length > 0 && (
-        <div className={styles.graphWrap}>
-          <ForceGraph2D
-            graphData={graph}
-            width={600}
-            height={400}
-            nodeLabel={(n) => (n as GraphNode).label}
-            onNodeClick={(n) => setSelectedNode((n as GraphNode).itemIndex)}
-            linkLabel={(l) => (l as { reason?: string }).reason || ''}
-          />
+        <div className={styles.graphLayout}>
+          <div className={styles.activityTableWrap}>
+            <h3>활동별 기록</h3>
+            <table className={styles.activityTable}>
+              <thead>
+                <tr>
+                  <th>영역</th>
+                  <th>구분</th>
+                  <th>건수</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activities.map((a, i) => (
+                  <tr
+                    key={i}
+                    className={selectedNode === i ? styles.selectedRow : ''}
+                    onClick={() => setSelectedNode(i)}
+                  >
+                    <td>{a.area}</td>
+                    <td>{a.sub}</td>
+                    <td>{a.itemIndices.length}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className={styles.graphWrap}>
+            <ForceGraph2D
+              graphData={graph}
+              width={500}
+              height={400}
+              nodeLabel={(n) => (n as GraphNode).label}
+              onNodeClick={(n) => setSelectedNode((n as GraphNode).itemIndex)}
+              linkLabel={(l) => (l as { reason?: string }).reason || ''}
+              nodeVal={(node) => {
+                const id = (node as { id?: string }).id ?? '';
+                const links = linkCountByNode.get(id) ?? 0;
+                return 3 + (links / maxLinks) * 7;
+              }}
+              nodeColor={(node) => {
+                const id = (node as { id?: string }).id ?? '';
+                const links = linkCountByNode.get(id) ?? 0;
+                if (selectedNode === Number(id)) return '#2563eb';
+                return links >= 2 ? '#1e40af' : '#3b82f6';
+              }}
+            />
+          </div>
         </div>
       )}
       {selectedNodeData !== null && selectedNodeData !== undefined && (
         <div className={styles.detail}>
-          <h3>선택한 활동</h3>
+          <h4>선택한 활동</h4>
           <p className={styles.itemMeta}>{selectedNodeData.label}</p>
-          <h4>해당 활동 기록 ({selectedItemIndices.length}건)</h4>
           <ul className={styles.connectedList}>
             {selectedItemIndices.map((i: number) => {
               const it = items[i];
@@ -102,11 +156,7 @@ export default function GraphSection({ items }: Props) {
                   .filter((i: number) => i !== selectedNode)
                   .map((i: number) => {
                     const node = graph?.nodes.find((n) => n.id === String(i));
-                    return node ? (
-                      <li key={i}>
-                        <strong>{node.label}</strong>
-                      </li>
-                    ) : null;
+                    return node ? <li key={i}><strong>{node.label}</strong></li> : null;
                   })}
               </ul>
             </>

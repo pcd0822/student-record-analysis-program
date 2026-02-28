@@ -55,8 +55,63 @@
   margin: 0.5rem 0;
 }
 
+.loading {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.graphLayout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 700px) {
+  .graphLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.activityTableWrap h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.activityTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.activityTable th,
+.activityTable td {
+  border: 1px solid #e5e7eb;
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+}
+
+.activityTable th {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.activityTable tbody tr {
+  cursor: pointer;
+}
+
+.activityTable tbody tr:hover {
+  background: #f0f9ff;
+}
+
+.selectedRow {
+  background: #dbeafe !important;
+}
+
 .graphWrap {
-  margin-top: 1rem;
+  margin-top: 0;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { listStudentIds } from '@/firebase/records';
 import { getAuthInstance } from '@/firebase/config';
+import type { StudentRecordDoc } from '@/types';
 import styles from './View.module.css';
 
 interface ListItem {
@@ -20,7 +21,7 @@ export default function View() {
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<unknown | null>(null);
+  const [detail, setDetail] = useState<StudentRecordDoc | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const location = useLocation();
 
@@ -46,9 +47,8 @@ export default function View() {
     setLoadingDetail(true);
     import('@/firebase/records')
       .then(({ getRecordByStudentId }) => getRecordByStudentId(selectedId))
-      .then((doc) => {
-        setDetail(doc ?? null);
-      })
+      .then((doc): StudentRecordDoc | null => (doc ?? null))
+      .then(setDetail)
       .finally(() => setLoadingDetail(false));
   }, [selectedId]);
 
@@ -66,7 +66,7 @@ export default function View() {
     <div className={styles.page}>
       <section className={styles.section}>
         <h2>생기부 조회</h2>
-        <p className={styles.hint}>학번을 클릭하면 해당 생기부 로우 데이터를 볼 수 있습니다.</p>
+        <p className={styles.hint}>학번을 클릭하면 해당 생기부를 테이블 형식으로 볼 수 있습니다.</p>
         {listError && (
           <div className={styles.errorBlock}>
             <p className={styles.error}>
@@ -125,7 +125,45 @@ export default function View() {
                       분석 대시보드 →
                     </Link>
                   </div>
-                  <pre className={styles.rawJson}>{JSON.stringify(detail, null, 2)}</pre>
+                  {(() => {
+                    const items = detail.items || [];
+                    const byArea = items.reduce<Record<string, typeof items>>((acc, it) => {
+                      const key = it.area || '기타';
+                      if (!acc[key]) acc[key] = [];
+                      acc[key].push(it);
+                      return acc;
+                    }, {});
+                    const hasDrafts = items.some((i) => i.draftContent);
+                    return (
+                      <div className={styles.recordTables}>
+                        {Object.entries(byArea).map(([area, list]) => (
+                          <div key={area} className={styles.recordBlock}>
+                            <h3>{area} ({list.length}건)</h3>
+                            <table className={styles.recordTable}>
+                              <thead>
+                                <tr>
+                                  <th>학년</th>
+                                  <th>구분</th>
+                                  <th>내용</th>
+                                  {hasDrafts && <th>초안</th>}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {list.map((it, i) => (
+                                  <tr key={i}>
+                                    <td>{it.grade ? `${it.grade}학년` : '-'}</td>
+                                    <td>{it.subCategory || it.label || '-'}</td>
+                                    <td className={styles.cellContent}>{it.content}</td>
+                                    {hasDrafts && <td className={styles.cellContent}>{it.draftContent ?? '-'}</td>}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </>
               ) : null}
               {selectedId && !loadingDetail && !detail && (

@@ -7,10 +7,10 @@
 
 const OpenAI = require('openai').default;
 
-const DEFAULT_PROMPT = `다음 "활동"들(생기부에서 영역·구분별로 묶은 단위) 사이에 연관성이 있는 쌍을 찾아 주세요.
-예: 같은 역량이 드러남, 같은 주제가 이어짐, 인성·태도가 일관됨 등.
-응답은 반드시 JSON만 출력: { "pairs": [ { "indexA": 0, "indexB": 1, "reason": "한 줄 설명" }, ... ] }
-indexA, indexB는 0부터 시작하는 활동 번호입니다.`;
+const DEFAULT_PROMPT = `다음 "활동"들(영역·구분별 단위) 사이 연결 관계를 **키워드**, **활동 주제**, **활동 내용** 세 가지 기준으로 분석해 주세요.
+연관 쌍을 찾을 때: 공통 키워드, 유사 주제, 내용적 연관성을 한 줄로 reason에 적으세요.
+응답은 반드시 JSON만: { "pairs": [ { "indexA": 0, "indexB": 1, "reason": "한 줄", "strength": 1~3 } }, ... ] }
+indexA, indexB는 활동 번호(0부터). strength는 연결 강도(3=매우 강함, 2=강함, 1=약함).`;
 
 function groupByActivity(items) {
   const map = new Map();
@@ -90,6 +90,7 @@ exports.handler = async (event) => {
         source: String(p.indexA),
         target: String(p.indexB),
         reason: p.reason || '',
+        strength: typeof p.strength === 'number' ? p.strength : 1,
       }));
 
     return {

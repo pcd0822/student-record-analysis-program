@@ -70,13 +70,13 @@ export default function Dashboard() {
           {hasDrafts && ` · 초안 ${doc.items.filter((i) => i.draftContent).length}건`}
         </p>
         <p className={styles.intro}>
-          아래에서 워드 클라우드, 연결관계 그래프, 역량 진단을 실행하고, 저장된 기록·초안을 확인할 수 있습니다.
+          워드 클라우드, 연결관계, 역량 진단이 자동으로 분석됩니다. 아래에서 결과를 확인하세요.
         </p>
       </header>
 
-      <WordCloudSection items={doc.items} />
-      <GraphSection items={doc.items} />
-      <CompetencySection items={doc.items} onResult={(r) => setAreaCompetency(r.areaCompetency ?? [])} />
+      <WordCloudSection items={doc.items} autoRun />
+      <GraphSection items={doc.items} autoRun />
+      <CompetencySection items={doc.items} autoRun onResult={(r) => setAreaCompetency(r.areaCompetency ?? [])} />
 
       <section className={styles.section} aria-labelledby="dashboard-records">
         <h2 id="dashboard-records" className={styles.sectionTitle}>기록 요약 (영역별)</h2>

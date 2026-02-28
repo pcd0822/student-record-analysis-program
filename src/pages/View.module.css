@@ -183,10 +183,40 @@
   text-decoration: underline;
 }
 
-.rawJson {
-  margin: 0;
-  font-size: 0.8rem;
-  white-space: pre-wrap;
-  word-break: break-all;
+.recordTables {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.recordBlock h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
   color: #374151;
+}
+
+.recordTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.recordTable th,
+.recordTable td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.recordTable th {
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+}
+
+.cellContent {
+  max-width: 420px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

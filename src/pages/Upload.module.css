@@ -89,6 +89,20 @@
   cursor: not-allowed;
 }
 
+.dashboardBtn {
+  padding: 0.5rem 1rem;
+  background: #059669;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.dashboardBtn:hover:not(:disabled) {
+  background: #047857;
+}
+
 .analyzeRow {
   display: flex;
   flex-wrap: wrap;

@@ -14,6 +14,7 @@ export interface GraphLink {
   source: string;
   target: string;
   reason: string;
+  strength?: number;
 }
 
 export async function getGraphConnections(

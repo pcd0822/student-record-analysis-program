@@ -50,27 +50,34 @@
   margin: 0.25rem 0;
 }
 
+.loading {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
 .cloud {
   margin-top: 1rem;
-  padding: 1rem;
-  min-height: 200px;
+  padding: 1.5rem;
+  min-height: 220px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem 0.75rem;
-  background: #f8fafc;
-  border-radius: 8px;
+  gap: 0.4rem 0.6rem;
+  background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%);
+  border-radius: 12px;
+  border: 1px solid #e0e7ff;
 }
 
 .word {
-  color: #1e3a5f;
   font-weight: 500;
   cursor: default;
-  padding: 0.1em 0.2em;
+  padding: 0.15em 0.25em;
+  transition: transform 0.15s ease;
 }
 
 .word:hover {
-  color: #2563eb;
+  transform: scale(1.08);
   text-decoration: underline;
 }

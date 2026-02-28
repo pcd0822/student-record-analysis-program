@@ -195,7 +195,7 @@ export default function Upload() {
       <section className={styles.section}>
         <h2>생기부 업로드</h2>
         <p className={styles.hint}>
-          HTML 파일 업로드 → 개인정보 삭제·수정 → 분석하기(초안 생성) → 활동 추가/수정 후 저장. (이름은 저장하지 않습니다)
+          HTML 파일 업로드 후 학번을 입력하고 <strong>저장하고 대시보드로</strong>를 누르면 바로 대시보드에서 분석 결과를 볼 수 있습니다. (선택: 개인정보 수정, AI 초안 생성)
         </p>
         <div className={styles.actions}>
           <label className={styles.fileLabel}>
@@ -215,6 +215,31 @@ export default function Upload() {
             </label>
             <button type="button" onClick={handleSave} disabled={saving || items.length === 0}>
               {saving ? '저장 중…' : '저장'}
+            </button>
+            <button
+              type="button"
+              className={styles.dashboardBtn}
+              onClick={async () => {
+                const sid = studentId.trim();
+                const user = getAuthInstance().currentUser;
+                if (!sid || !user || items.length === 0) {
+                  setMessage({ type: 'err', text: '학번을 입력하고 저장할 항목이 있어야 합니다.' });
+                  return;
+                }
+                setSaving(true);
+                setMessage(null);
+                try {
+                  await saveRecord(sid, items, user.uid);
+                  setAnalyzing(false);
+                  navigate(`/dashboard/${sid}`, { replace: true });
+                } catch (e) {
+                  setMessage({ type: 'err', text: e instanceof Error ? e.message : '저장에 실패했습니다.' });
+                  setSaving(false);
+                }
+              }}
+              disabled={saving || items.length === 0 || !studentId.trim()}
+            >
+              저장하고 대시보드로
             </button>
           </div>
         </div>
