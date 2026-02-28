@@ -164,10 +164,77 @@
   font-size: 0.9rem;
 }
 
+.msgOk p,
+.msgErr p {
+  margin: 0 0 0.25rem;
+}
+
+.msgAction {
+  margin-top: 0.5rem !important;
+}
+
+.msgAction a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.msgAction a:hover {
+  text-decoration: underline;
+}
+
 .msgErr {
   margin: 0.75rem 0 0;
   color: #dc2626;
   font-size: 0.9rem;
+}
+
+/* 분석 중 로딩 오버레이 */
+.analyzeOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.analyzeModal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  min-width: 280px;
+}
+
+.analyzeSpinner {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1.25rem;
+  border: 4px solid #e5e7eb;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: uploadSpinner 0.9s linear infinite;
+}
+
+@keyframes uploadSpinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.analyzeText {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1d29;
+}
+
+.analyzeSub {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b7280;
 }
 
 .textarea {

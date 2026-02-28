@@ -5,6 +5,7 @@ import {
   getDoc,
   getDocs,
   query,
+  where,
   orderBy,
   limit,
 } from 'firebase/firestore';
@@ -54,19 +55,21 @@ export async function getRecordByStudentId(studentId: string): Promise<StudentRe
   return snap.data() as StudentRecordDoc;
 }
 
-export async function listStudentIds(createdBy?: string): Promise<{ studentId: string; uploadedAt: string }[]> {
+export async function listStudentIds(createdBy: string): Promise<{ studentId: string; uploadedAt: string }[]> {
   const db = getDb();
   const ref = collection(db, RECORDS_COLLECTION);
-  const q = query(ref, orderBy('uploadedAt', 'desc'), limit(200));
+  const q = query(
+    ref,
+    where('createdBy', '==', createdBy),
+    orderBy('uploadedAt', 'desc'),
+    limit(200)
+  );
   const snap = await getDocs(q);
-  const list: { studentId: string; uploadedAt: string }[] = [];
-  snap.docs.forEach((d) => {
+  return snap.docs.map((d) => {
     const data = d.data();
-    if (createdBy && data.createdBy !== createdBy) return;
-    list.push({
+    return {
       studentId: data.studentId ?? d.id,
       uploadedAt: data.uploadedAt ?? '',
-    });
+    };
   });
-  return list;
 }

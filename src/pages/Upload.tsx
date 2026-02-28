@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { parseLifeRecordHtml } from '@/utils/htmlParser';
 import { saveRecord } from '@/firebase/records';
 import { getAuthInstance } from '@/firebase/config';
@@ -95,7 +96,10 @@ export default function Upload() {
       const { itemsWithDrafts } = await analyzeItems(items);
       setItems(itemsWithDrafts);
       setShowDrafts(true);
-      setMessage({ type: 'ok', text: '초안 생성이 완료되었습니다. 초안을 수정하거나 활동을 추가한 뒤 저장하세요.' });
+      setMessage({
+        type: 'ok',
+        text: '초안 생성이 완료되었습니다. 초안을 수정하거나 활동을 추가한 뒤 저장하세요. 저장 후 조회 → 해당 학번 선택 → 분석 대시보드에서 결과를 볼 수 있습니다.',
+      });
     } catch (e) {
       setMessage({ type: 'err', text: e instanceof Error ? e.message : '분석에 실패했습니다.' });
     } finally {
@@ -131,7 +135,10 @@ export default function Upload() {
     setMessage(null);
     try {
       await saveRecord(studentId.trim(), items, user.uid);
-      setMessage({ type: 'ok', text: '저장되었습니다.' });
+      setMessage({
+        type: 'ok',
+        text: '저장되었습니다. 조회 탭에서 목록을 새로고침하면 방금 저장한 학번을 볼 수 있고, 해당 학번을 선택한 뒤 "분석 대시보드"로 이동할 수 있습니다.',
+      });
     } catch (e) {
       setMessage({ type: 'err', text: e instanceof Error ? e.message : '저장에 실패했습니다.' });
     } finally {
@@ -157,6 +164,15 @@ export default function Upload() {
 
   return (
     <div className={styles.page}>
+      {analyzing && (
+        <div className={styles.analyzeOverlay} aria-busy="true" aria-live="polite">
+          <div className={styles.analyzeModal}>
+            <div className={styles.analyzeSpinner} />
+            <p className={styles.analyzeText}>생기부 분석 중…</p>
+            <p className={styles.analyzeSub}>AI가 초안을 생성하는 동안 잠시만 기다려 주세요.</p>
+          </div>
+        </div>
+      )}
       <section className={styles.section}>
         <h2>생기부 업로드</h2>
         <p className={styles.hint}>
@@ -216,7 +232,20 @@ export default function Upload() {
           </div>
         )}
         {message && (
-          <p className={message.type === 'ok' ? styles.msgOk : styles.msgErr}>{message.text}</p>
+          <div className={message.type === 'ok' ? styles.msgOk : styles.msgErr}>
+            <p>{message.text}</p>
+            {message.type === 'ok' && (
+              <p className={styles.msgAction}>
+                <Link to="/view">조회로 이동</Link>
+                {studentId.trim() && (
+                  <>
+                    {' · '}
+                    <Link to={`/dashboard/${studentId.trim()}`}>분석 대시보드 보기</Link>
+                  </>
+                )}
+              </p>
+            )}
+          </div>
         )}
       </section>
 

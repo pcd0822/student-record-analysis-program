@@ -56,24 +56,30 @@ export default function Dashboard() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
+      <header className={styles.header}>
         <Link to="/view" className={styles.back}>
-          ← 조회
+          ← 조회 목록
         </Link>
-        <h1>분석 대시보드 · 학번 {studentId}</h1>
+        <h1 className={styles.title}>분석 대시보드</h1>
+        <p className={styles.studentId}>학번 {studentId}</p>
         <p className={styles.meta}>
           업로드: {new Date(doc.uploadedAt).toLocaleString('ko-KR')}
+          {' · '}총 {doc.items.length}건 기록
+          {hasDrafts && ` · 초안 ${doc.items.filter((i) => i.draftContent).length}건`}
         </p>
-      </div>
+        <p className={styles.intro}>
+          아래에서 워드 클라우드, 연결관계 그래프, 역량 진단을 실행하고, 저장된 기록·초안을 확인할 수 있습니다.
+        </p>
+      </header>
 
       <WordCloudSection items={doc.items} />
       <GraphSection items={doc.items} />
       <CompetencySection items={doc.items} />
 
-      <section className={styles.section}>
-        <h2>기록 요약 (영역별) · 자세히 보기</h2>
+      <section className={styles.section} aria-labelledby="dashboard-records">
+        <h2 id="dashboard-records" className={styles.sectionTitle}>기록 요약 (영역별)</h2>
         <p className={styles.hint}>
-          아래 표에서 해당 생기부 기록을 확인할 수 있습니다.
+          저장된 생기부 기록과 초안을 표로 확인할 수 있습니다.
         </p>
         {Object.entries(byArea).map(([area, list]) => (
           <div key={area} className={styles.block}>

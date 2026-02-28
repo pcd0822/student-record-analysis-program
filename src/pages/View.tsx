@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { listStudentIds } from '@/firebase/records';
 import { getAuthInstance } from '@/firebase/config';
 import styles from './View.module.css';
@@ -9,20 +9,34 @@ interface ListItem {
   uploadedAt: string;
 }
 
+function fetchList(): Promise<ListItem[]> {
+  const user = getAuthInstance().currentUser;
+  if (!user) return Promise.resolve([]);
+  return listStudentIds(user.uid);
+}
+
 export default function View() {
   const [list, setList] = useState<ListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<unknown | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const location = useLocation();
 
-  useEffect(() => {
-    const user = getAuthInstance().currentUser;
-    if (!user) return;
-    listStudentIds(user.uid)
+  const loadList = useCallback(() => {
+    setListError(null);
+    setLoading(true);
+    fetchList()
       .then(setList)
+      .catch((e) => setListError(e instanceof Error ? e.message : '목록을 불러올 수 없습니다.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (location.pathname !== '/view') return;
+    loadList();
+  }, [location.pathname, loadList]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -53,13 +67,27 @@ export default function View() {
       <section className={styles.section}>
         <h2>생기부 조회</h2>
         <p className={styles.hint}>학번을 클릭하면 해당 생기부 로우 데이터를 볼 수 있습니다.</p>
+        {listError && (
+          <p className={styles.error}>
+            {listError}
+            <button type="button" className={styles.refreshBtn} onClick={loadList}>
+              다시 시도
+            </button>
+          </p>
+        )}
         {loading ? (
           <p>목록 불러오는 중…</p>
-        ) : list.length === 0 ? (
+        ) : !listError && list.length === 0 ? (
           <p className={styles.empty}>저장된 생기부가 없습니다. 업로드 탭에서 먼저 등록해 주세요.</p>
-        ) : (
+        ) : !listError ? (
           <div className={styles.layout}>
             <div className={styles.listPanel}>
+              <div className={styles.listHeader}>
+                <span>학번 목록</span>
+                <button type="button" className={styles.refreshBtn} onClick={loadList} disabled={loading}>
+                  새로고침
+                </button>
+              </div>
               <ul className={styles.list}>
                 {list.map(({ studentId, uploadedAt }) => (
                   <li key={studentId}>
@@ -98,7 +126,7 @@ export default function View() {
               )}
             </div>
           </div>
-        )}
+        ) : null}
       </section>
     </div>
   );

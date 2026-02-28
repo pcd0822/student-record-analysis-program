@@ -1,16 +1,22 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+  padding-bottom: 2rem;
 }
 
 .header {
-  margin-bottom: 0.5rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .back {
   display: inline-block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   color: #2563eb;
   text-decoration: none;
   font-size: 0.9rem;
@@ -20,10 +26,18 @@
   text-decoration: underline;
 }
 
-.header h1 {
+.title {
   margin: 0 0 0.25rem;
-  font-size: 1.35rem;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #1a1d29;
+}
+
+.studentId {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
 }
 
 .meta {
@@ -32,17 +46,31 @@
   font-size: 0.9rem;
 }
 
+.intro {
+  margin: 0.75rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.sectionTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1a1d29;
+}
+
 .section {
   background: #fff;
-  border-radius: 10px;
-  padding: 1.25rem;
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-.section h2 {
+.section h2.sectionTitle {
   margin: 0 0 0.5rem;
-  font-size: 1.15rem;
-  color: #1a1d29;
 }
 
 .hint {
