@@ -6,11 +6,7 @@
 [build.environment]
   NODE_VERSION = "18"
 
-# 분석 함수는 OpenAI 호출로 시간이 걸리므로 타임아웃 연장 (최대 26초, Pro 플랜 등에서 적용)
-[functions]
-  timeout = 26
-
-# SPA: 로그인 리다이렉트 후 /login 등 모든 경로가 index.html로 처리되도록
+# SPA: all routes serve index.html for client-side routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
