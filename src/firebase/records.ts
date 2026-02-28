@@ -13,6 +13,20 @@ import type { StudentRecordDoc } from '@/types';
 
 const RECORDS_COLLECTION = 'records';
 
+/** Firestore는 undefined 값을 허용하지 않음. 저장 전 제거 */
+function removeUndefined<T>(value: T): T {
+  if (value === undefined) return value;
+  if (Array.isArray(value)) return value.map(removeUndefined) as T;
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (v !== undefined) out[k] = removeUndefined(v);
+    }
+    return out as T;
+  }
+  return value;
+}
+
 export async function saveRecord(
   studentId: string,
   items: StudentRecordDoc['items'],
@@ -21,14 +35,14 @@ export async function saveRecord(
   const db = getDb();
   const ref = doc(db, RECORDS_COLLECTION, studentId);
   const now = new Date().toISOString();
-  const data: Omit<StudentRecordDoc, 'studentId'> & { studentId: string } = {
+  const data = removeUndefined({
     studentId,
     uploadedAt: now,
     items,
     createdAt: now,
     updatedAt: now,
     createdBy,
-  };
+  });
   await setDoc(ref, data);
 }
 

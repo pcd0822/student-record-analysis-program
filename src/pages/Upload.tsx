@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { parseLifeRecordHtml } from '@/utils/htmlParser';
 import { saveRecord } from '@/firebase/records';
 import { getAuthInstance } from '@/firebase/config';
@@ -7,6 +7,41 @@ import type { RecordItem } from '@/types';
 import styles from './Upload.module.css';
 
 type ViewMode = 'byArea' | 'byGrade' | 'raw';
+
+/** 개인정보 수정 모드: 텍스트 분량에 맞춰 높이가 늘어나는 textarea */
+function AutoResizeTextarea({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const resize = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(el.scrollHeight, 52)}px`;
+  }, []);
+  useEffect(resize, [value, resize]);
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => {
+        onChange(e);
+        setTimeout(resize, 0);
+      }}
+      placeholder={placeholder}
+      className={className}
+      rows={2}
+    />
+  );
+}
 
 export default function Upload() {
   const [studentId, setStudentId] = useState('');
@@ -237,10 +272,9 @@ export default function Upload() {
                             <td>{it.subCategory || it.label || '-'}</td>
                             <td className={styles.cellContent}>
                               {editMode ? (
-                                <textarea
+                                <AutoResizeTextarea
                                   value={it.content}
                                   onChange={(e) => updateItemContent(idx, e.target.value)}
-                                  rows={2}
                                   className={styles.textarea}
                                 />
                               ) : (
@@ -250,11 +284,10 @@ export default function Upload() {
                             {showDrafts && (
                               <td className={styles.cellContent}>
                                 {editMode ? (
-                                  <textarea
+                                  <AutoResizeTextarea
                                     value={it.draftContent ?? ''}
                                     onChange={(e) => updateItemDraft(idx, e.target.value)}
                                     placeholder="분석하기 후 초안이 표시됩니다"
-                                    rows={2}
                                     className={styles.textarea}
                                   />
                                 ) : (
@@ -295,10 +328,9 @@ export default function Upload() {
                             <td>{it.subCategory || it.label || '-'}</td>
                             <td className={styles.cellContent}>
                               {editMode ? (
-                                <textarea
+                                <AutoResizeTextarea
                                   value={it.content}
                                   onChange={(e) => updateItemContent(idx, e.target.value)}
-                                  rows={2}
                                   className={styles.textarea}
                                 />
                               ) : (
@@ -308,11 +340,10 @@ export default function Upload() {
                             {showDrafts && (
                               <td className={styles.cellContent}>
                                 {editMode ? (
-                                  <textarea
+                                  <AutoResizeTextarea
                                     value={it.draftContent ?? ''}
                                     onChange={(e) => updateItemDraft(idx, e.target.value)}
                                     placeholder="분석하기 후 초안 표시"
-                                    rows={2}
                                     className={styles.textarea}
                                   />
                                 ) : (
@@ -351,10 +382,9 @@ export default function Upload() {
                     <td>{it.subCategory || it.label || '-'}</td>
                     <td className={styles.cellContent}>
                       {editMode ? (
-                        <textarea
+                        <AutoResizeTextarea
                           value={it.content}
                           onChange={(e) => updateItemContent(i, e.target.value)}
-                          rows={2}
                           className={styles.textarea}
                         />
                       ) : (
@@ -364,11 +394,10 @@ export default function Upload() {
                     {showDrafts && (
                       <td className={styles.cellContent}>
                         {editMode ? (
-                          <textarea
+                          <AutoResizeTextarea
                             value={it.draftContent ?? ''}
                             onChange={(e) => updateItemDraft(i, e.target.value)}
                             placeholder="초안"
-                            rows={2}
                             className={styles.textarea}
                           />
                         ) : (
