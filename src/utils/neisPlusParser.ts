@@ -18,23 +18,60 @@ function isNeisPlusFormat(html: string): boolean {
   );
 }
 
+/** 창의적 체험활동 하위 영역 매칭: 공백/표기 변형 포함 */
+const CREATIVE_ACTIVITY_PATTERNS: { key: string; patterns: string[] }[] = [
+  { key: '자율활동', patterns: ['자율활동', '자율 활동'] },
+  { key: '동아리활동', patterns: ['동아리활동', '동아리 활동', '동아리'] },
+  { key: '봉사활동', patterns: ['봉사활동', '봉사 활동'] },
+  { key: '진로활동', patterns: ['진로활동', '진로 활동'] },
+];
+
+function matchCreativeActivityArea(title: string, text: string): string | null {
+  const combined = `${title} ${text}`;
+  for (const { key, patterns } of CREATIVE_ACTIVITY_PATTERNS) {
+    if (patterns.some((p) => combined.includes(p))) return key;
+  }
+  return null;
+}
+
+/** tr 내 모든 셀 텍스트를 합쳐서 창의적 체험 하위 영역 추정 (라벨 셀에 title 없을 때 보완) */
+function inferCreativeAreaFromRow(tr: Element): string | null {
+  const rowText = tr.textContent?.trim() || '';
+  return matchCreativeActivityArea(rowText, rowText);
+}
+
 /** tr에서 학년(숫자), 영역(자율활동 등) 추출 */
 function getRowContext(tr: Element): { grade?: number; area?: string; subCategory?: string } {
   const result: { grade?: number; area?: string; subCategory?: string } = {};
-  const inherits = tr.querySelectorAll('.tbl-inherit[title]');
-  inherits.forEach((el) => {
+  const withTitle = tr.querySelectorAll('.tbl-inherit[title]');
+  withTitle.forEach((el) => {
     const title = (el.getAttribute('title') || '').trim();
     const text = el.textContent?.trim() || '';
     if (/^[123]$/.test(title) || /^[123]$/.test(text)) {
       result.grade = parseInt(title || text, 10);
-    } else if (
-      ['자율활동', '동아리활동', '봉사활동', '진로활동'].some((a) => title.includes(a) || text.includes(a))
-    ) {
-      result.area = title || text;
-    } else if (title && !result.subCategory && title.length <= 50) {
-      result.subCategory = title;
+    } else {
+      const matchedArea = matchCreativeActivityArea(title, text);
+      if (matchedArea) {
+        result.area = matchedArea;
+      } else if (title && !result.subCategory && title.length <= 50) {
+        result.subCategory = title;
+      }
     }
   });
+  if (!result.area) {
+    tr.querySelectorAll('.tbl-inherit').forEach((el) => {
+      if (result.area) return;
+      const t = (el.getAttribute('title') || el.textContent || '').trim();
+      if (t && !/^[123]$/.test(t)) {
+        const matched = matchCreativeActivityArea(t, t);
+        if (matched) result.area = matched;
+      }
+    });
+  }
+  if (!result.area) {
+    const inferred = inferCreativeAreaFromRow(tr);
+    if (inferred) result.area = inferred;
+  }
   return result;
 }
 
