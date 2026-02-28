@@ -3,7 +3,10 @@ import type { AnalyzeResponse } from '@/types';
 
 const ANALYZE_URL = '/.netlify/functions/analyze';
 
-export async function analyzeItems(items: RecordItem[]): Promise<AnalyzeResponse> {
+/** 한 번에 처리할 항목 수. Netlify 함수 타임아웃(10~26초) 내에 완료되도록 제한 */
+const BATCH_SIZE = 10;
+
+async function analyzeBatch(items: RecordItem[]): Promise<RecordItem[]> {
   const res = await fetch(ANALYZE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -16,5 +19,25 @@ export async function analyzeItems(items: RecordItem[]): Promise<AnalyzeResponse
   if (!data.itemsWithDrafts || !Array.isArray(data.itemsWithDrafts)) {
     throw new Error('분석 결과 형식이 올바르지 않습니다.');
   }
-  return data as AnalyzeResponse;
+  return data.itemsWithDrafts as RecordItem[];
+}
+
+/**
+ * 생기부 항목별 AI 초안 생성. 항목이 많을 경우 배치로 나눠 요청해 504 타임아웃을 피합니다.
+ */
+export async function analyzeItems(items: RecordItem[]): Promise<AnalyzeResponse> {
+  if (items.length === 0) {
+    return { itemsWithDrafts: [] };
+  }
+  if (items.length <= BATCH_SIZE) {
+    const itemsWithDrafts = await analyzeBatch(items);
+    return { itemsWithDrafts };
+  }
+  const itemsWithDrafts: RecordItem[] = [];
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const chunk = items.slice(i, i + BATCH_SIZE);
+    const chunkResult = await analyzeBatch(chunk);
+    itemsWithDrafts.push(...chunkResult);
+  }
+  return { itemsWithDrafts };
 }
