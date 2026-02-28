@@ -6,6 +6,8 @@ export interface GraphNode {
   id: string;
   label: string;
   itemIndex: number;
+  /** 해당 활동에 속한 원본 항목 인덱스 (활동별 그래프용) */
+  itemIndices?: number[];
 }
 
 export interface GraphLink {

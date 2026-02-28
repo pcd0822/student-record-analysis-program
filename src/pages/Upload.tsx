@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { parseLifeRecordHtml } from '@/utils/htmlParser';
 import { saveRecord } from '@/firebase/records';
 import { getAuthInstance } from '@/firebase/config';
@@ -45,6 +45,7 @@ function AutoResizeTextarea({
 }
 
 export default function Upload() {
+  const navigate = useNavigate();
   const [studentId, setStudentId] = useState('');
   const [items, setItems] = useState<RecordItem[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('byArea');
@@ -96,10 +97,28 @@ export default function Upload() {
       const { itemsWithDrafts } = await analyzeItems(items);
       setItems(itemsWithDrafts);
       setShowDrafts(true);
-      setMessage({
-        type: 'ok',
-        text: '초안 생성이 완료되었습니다. 초안을 수정하거나 활동을 추가한 뒤 저장하세요. 저장 후 조회 → 해당 학번 선택 → 분석 대시보드에서 결과를 볼 수 있습니다.',
-      });
+
+      const sid = studentId.trim();
+      const user = getAuthInstance().currentUser;
+      if (sid && user) {
+        try {
+          await saveRecord(sid, itemsWithDrafts, user.uid);
+          setAnalyzing(false);
+          setMessage({ type: 'ok', text: '초안 생성 및 저장이 완료되었습니다. 대시보드로 이동합니다.' });
+          navigate(`/dashboard/${sid}`, { replace: true });
+          return;
+        } catch (_) {
+          setMessage({
+            type: 'ok',
+            text: '초안 생성이 완료되었습니다. 저장에 실패해 대시보드로 이동하지 않았습니다. 학번을 확인하고 저장 버튼을 눌러 주세요.',
+          });
+        }
+      } else {
+        setMessage({
+          type: 'ok',
+          text: '초안 생성이 완료되었습니다. 학번을 입력한 뒤 저장하면 대시보드로 이동할 수 있습니다.',
+        });
+      }
     } catch (e) {
       setMessage({ type: 'err', text: e instanceof Error ? e.message : '분석에 실패했습니다.' });
     } finally {

@@ -4,7 +4,7 @@ import type { AnalyzeResponse } from '@/types';
 const ANALYZE_URL = '/.netlify/functions/analyze';
 
 /** 한 번에 처리할 항목 수. Netlify 함수 타임아웃(10~26초) 내에 완료되도록 제한 */
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 5;
 
 type ItemWithDraft = RecordItem & { draftContent: string };
 

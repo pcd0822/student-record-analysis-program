@@ -68,12 +68,19 @@ export default function View() {
         <h2>생기부 조회</h2>
         <p className={styles.hint}>학번을 클릭하면 해당 생기부 로우 데이터를 볼 수 있습니다.</p>
         {listError && (
-          <p className={styles.error}>
-            {listError}
-            <button type="button" className={styles.refreshBtn} onClick={loadList}>
-              다시 시도
-            </button>
-          </p>
+          <div className={styles.errorBlock}>
+            <p className={styles.error}>
+              {listError}
+              <button type="button" className={styles.refreshBtn} onClick={loadList}>
+                다시 시도
+              </button>
+            </p>
+            {listError.includes('index') && (
+              <p className={styles.indexHint}>
+                Firestore 복합 인덱스가 필요합니다. 오류 메시지에 포함된 링크를 열어 인덱스를 생성하거나, 프로젝트 루트에서 <code>firebase deploy --only firestore:indexes</code> 를 실행하세요.
+              </p>
+            )}
+          </div>
         )}
         {loading ? (
           <p>목록 불러오는 중…</p>

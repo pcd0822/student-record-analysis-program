@@ -70,27 +70,21 @@ exports.handler = async (event) => {
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      if (res.ok) {
+        const counts = extractFromBareunResponse(data);
+        const words = Object.entries(counts)
+          .map(([word, count]) => ({ word, value: count }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 150);
         return {
-          statusCode: res.status,
-          body: JSON.stringify({ error: 'Bareun API error', detail: data }),
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ words, source: 'bareun' }),
         };
       }
-      const counts = extractFromBareunResponse(data);
-      const words = Object.entries(counts)
-        .map(([word, count]) => ({ word, value: count }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 150);
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ words, source: 'bareun' }),
-      };
-    } catch (err) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Bareun request failed', detail: err?.message }),
-      };
+      // Bareun 실패 시 아래 OpenAI 폴백으로 진행 (에러 반환하지 않음)
+    } catch (_) {
+      // Bareun 요청 실패 시 OpenAI 폴백으로 진행
     }
   }
 

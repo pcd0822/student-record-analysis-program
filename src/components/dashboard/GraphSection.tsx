@@ -36,13 +36,14 @@ export default function GraphSection({ items }: Props) {
       .finally(() => setLoading(false));
   }, [items, prompt]);
 
-  const selectedItem = selectedNode != null ? items[selectedNode] : null;
-  const connectedIndices = new Set<number>();
+  const selectedNodeData = graph && selectedNode != null ? graph.nodes.find((n) => n.id === String(selectedNode)) : null;
+  const selectedItemIndices = selectedNodeData?.itemIndices ?? (selectedNode != null ? [selectedNode] : []);
+  const connectedActivityIndices = new Set<number>();
   if (graph && selectedNode != null) {
     graph.links.forEach((l) => {
       if (l.source === String(selectedNode) || l.target === String(selectedNode)) {
-        connectedIndices.add(Number(l.source));
-        connectedIndices.add(Number(l.target));
+        connectedActivityIndices.add(Number(l.source));
+        connectedActivityIndices.add(Number(l.target));
       }
     });
   }
@@ -76,26 +77,37 @@ export default function GraphSection({ items }: Props) {
           />
         </div>
       )}
-      {selectedItem !== null && (
+      {selectedNodeData !== null && selectedNodeData !== undefined && (
         <div className={styles.detail}>
-          <h3>선택한 기록</h3>
-          <p className={styles.itemMeta}>
-            {selectedItem.area} {selectedItem.subCategory ? `· ${selectedItem.subCategory}` : ''}
-            {selectedItem.grade ? ` · ${selectedItem.grade}학년` : ''}
-          </p>
-          <p className={styles.itemContent}>{selectedItem.content}</p>
-          {connectedIndices.size > 1 && (
+          <h3>선택한 활동</h3>
+          <p className={styles.itemMeta}>{selectedNodeData.label}</p>
+          <h4>해당 활동 기록 ({selectedItemIndices.length}건)</h4>
+          <ul className={styles.connectedList}>
+            {selectedItemIndices.map((i) => {
+              const it = items[i];
+              if (!it) return null;
+              return (
+                <li key={i}>
+                  <strong>[{i + 1}]</strong> {it.grade ? `${it.grade}학년 ` : ''}
+                  {(it.content || '').slice(0, 120)}{(it.content || '').length > 120 ? '…' : ''}
+                </li>
+              );
+            })}
+          </ul>
+          {connectedActivityIndices.size > 1 && (
             <>
-              <h4>연결된 기록</h4>
+              <h4>연결된 활동</h4>
               <ul className={styles.connectedList}>
-                {Array.from(connectedIndices)
+                {Array.from(connectedActivityIndices)
                   .filter((i) => i !== selectedNode)
-                  .map((i) => (
-                    <li key={i}>
-                      <strong>[{i + 1}]</strong> {items[i].area} {items[i].subCategory || ''} —{' '}
-                      {(items[i].content || '').slice(0, 80)}…
-                    </li>
-                  ))}
+                  .map((i) => {
+                    const node = graph?.nodes.find((n) => n.id === String(i));
+                    return node ? (
+                      <li key={i}>
+                        <strong>{node.label}</strong>
+                      </li>
+                    ) : null;
+                  })}
               </ul>
             </>
           )}

@@ -1,7 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getRecordByStudentId } from '@/firebase/records';
 import type { StudentRecordDoc } from '@/types';
+import type { AreaCompetency } from '@/api/competency';
 import WordCloudSection from '@/components/dashboard/WordCloudSection';
 import GraphSection from '@/components/dashboard/GraphSection';
 import CompetencySection from '@/components/dashboard/CompetencySection';
@@ -11,6 +12,7 @@ export default function Dashboard() {
   const { studentId } = useParams<{ studentId: string }>();
   const [doc, setDoc] = useState<StudentRecordDoc | null>(null);
   const [loading, setLoading] = useState(true);
+  const [areaCompetency, setAreaCompetency] = useState<AreaCompetency[]>([]);
 
   useEffect(() => {
     if (!studentId) return;
@@ -74,16 +76,28 @@ export default function Dashboard() {
 
       <WordCloudSection items={doc.items} />
       <GraphSection items={doc.items} />
-      <CompetencySection items={doc.items} />
+      <CompetencySection items={doc.items} onResult={(r) => setAreaCompetency(r.areaCompetency ?? [])} />
 
       <section className={styles.section} aria-labelledby="dashboard-records">
         <h2 id="dashboard-records" className={styles.sectionTitle}>기록 요약 (영역별)</h2>
         <p className={styles.hint}>
-          저장된 생기부 기록과 초안을 표로 확인할 수 있습니다.
+          영역별 기록 내용 요약과 역량 관련성(학업·진로·공동체 %)을 확인할 수 있습니다. 역량 분석을 실행하면 퍼센트가 채워집니다.
         </p>
-        {Object.entries(byArea).map(([area, list]) => (
+        {Object.entries(byArea).map(([area, list]) => {
+          const ac = areaCompetency.find((a) => a.area === area);
+          return (
           <div key={area} className={styles.block}>
             <h3>{area} ({list.length}건)</h3>
+            {ac && (
+              <div className={styles.areaCompetency}>
+                {ac.summary && <p className={styles.areaSummary}>{ac.summary}</p>}
+                <div className={styles.areaPercents}>
+                  <span>학업역량 <strong>{ac.academic}%</strong></span>
+                  <span>진로역량 <strong>{ac.career}%</strong></span>
+                  <span>공동체역량 <strong>{ac.community}%</strong></span>
+                </div>
+              </div>
+            )}
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -107,7 +121,8 @@ export default function Dashboard() {
               </tbody>
             </table>
           </div>
-        ))}
+          );
+        })}
       </section>
     </div>
   );
