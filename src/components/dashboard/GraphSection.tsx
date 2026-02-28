@@ -9,7 +9,7 @@ interface Props {
 }
 
 interface GraphData {
-  nodes: { id: string; label: string; itemIndex: number }[];
+  nodes: { id: string; label: string; itemIndex: number; itemIndices?: number[] }[];
   links: { source: string; target: string; reason: string }[];
 }
 
@@ -83,7 +83,7 @@ export default function GraphSection({ items }: Props) {
           <p className={styles.itemMeta}>{selectedNodeData.label}</p>
           <h4>해당 활동 기록 ({selectedItemIndices.length}건)</h4>
           <ul className={styles.connectedList}>
-            {selectedItemIndices.map((i) => {
+            {selectedItemIndices.map((i: number) => {
               const it = items[i];
               if (!it) return null;
               return (
@@ -99,8 +99,8 @@ export default function GraphSection({ items }: Props) {
               <h4>연결된 활동</h4>
               <ul className={styles.connectedList}>
                 {Array.from(connectedActivityIndices)
-                  .filter((i) => i !== selectedNode)
-                  .map((i) => {
+                  .filter((i: number) => i !== selectedNode)
+                  .map((i: number) => {
                     const node = graph?.nodes.find((n) => n.id === String(i));
                     return node ? (
                       <li key={i}>

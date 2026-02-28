@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { getRecordByStudentId } from '@/firebase/records';
 import type { StudentRecordDoc } from '@/types';
 import type { AreaCompetency } from '@/api/competency';
