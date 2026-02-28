@@ -8,6 +8,8 @@ export interface AreaCompetency {
   academic: number;
   career: number;
   community: number;
+  /** 활동별 표시 시 구분(예: 세부 영역). 선택 */
+  sub?: string;
 }
 
 export interface ActivityCompetency extends AreaCompetency {
