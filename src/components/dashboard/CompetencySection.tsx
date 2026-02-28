@@ -13,7 +13,7 @@ interface Props {
 const COMPETENCY_COLORS: Record<string, string> = {
   학업역량: '#93c5fd',
   진로역량: '#86efac',
-  공동체역량: '#fde047',
+  공동체역량: '#f9a8a8',
 };
 
 export default function CompetencySection({ items, onResult, autoRun = true }: Props) {

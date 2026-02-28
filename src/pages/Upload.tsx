@@ -197,6 +197,9 @@ export default function Upload() {
         <p className={styles.hint}>
           HTML 파일 업로드 후 학번을 입력하고 <strong>저장하고 대시보드로</strong>를 누르면 바로 대시보드에서 분석 결과를 볼 수 있습니다. (선택: 개인정보 수정, AI 초안 생성)
         </p>
+        <p className={styles.paragraphNotice}>
+          <strong>활동 구분 안내:</strong> 한 셀에 서로 다른 활동이 여러 개 있으면, 활동과 활동 사이를 <strong>빈 줄</strong>로 구분해 두세요. 대시보드의 연결관계·역량 분석은 문단(빈 줄) 단위로 활동을 나누어 분석합니다.
+        </p>
         <div className={styles.actions}>
           <label className={styles.fileLabel}>
             HTML 파일 선택
@@ -253,6 +256,11 @@ export default function Upload() {
               />
               개인정보 수정 모드 (내용 셀 직접 편집)
             </label>
+            {editMode && (
+              <p className={styles.editModeNotice}>
+                내용 셀에서 서로 다른 활동은 <strong>빈 줄</strong>로 나누어 입력하세요. (예: 첫 번째 활동 내용 → 빈 줄 → 두 번째 활동 내용) 그러면 대시보드에서 활동별로 구분해 분석합니다.
+              </p>
+            )}
             <button
               type="button"
               className={styles.analyzeBtn}

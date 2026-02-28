@@ -23,6 +23,21 @@
   font-size: 0.9rem;
 }
 
+.paragraphNotice {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.9rem;
+  background: #f5f3ff;
+  border-radius: 8px;
+  border-left: 4px solid #a78bfa;
+  color: #4c1d95;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.paragraphNotice strong {
+  color: #5b21b6;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -128,6 +143,21 @@
   background: #1a1d29;
   color: #fff;
   border-color: #1a1d29;
+}
+
+.editModeNotice {
+  width: 100%;
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  background: #ede9fe;
+  border-radius: 6px;
+  color: #5b21b6;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.editModeNotice strong {
+  color: #4c1d95;
 }
 
 .checkLabel {
