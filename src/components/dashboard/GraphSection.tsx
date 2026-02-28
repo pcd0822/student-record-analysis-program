@@ -10,20 +10,14 @@ interface Props {
 }
 
 interface GraphData {
-  nodes: { id: string; label: string; itemIndex: number; itemIndices?: number[] }[];
+  nodes: GraphNode[];
   links: { source: string; target: string; reason: string; strength?: number }[];
 }
 
-function groupByActivity(items: RecordItem[]): { area: string; sub: string; itemIndices: number[] }[] {
-  const map = new Map<string, { area: string; sub: string; itemIndices: number[] }>();
-  items.forEach((it, idx) => {
-    const area = it.area || '기타';
-    const sub = it.subCategory || it.label || '기타';
-    const key = `${area}|${sub}`;
-    if (!map.has(key)) map.set(key, { area, sub, itemIndices: [] });
-    map.get(key)!.itemIndices.push(idx);
-  });
-  return Array.from(map.values());
+function parseLabel(label: string): { area: string; sub: string } {
+  const i = label.indexOf(' · ');
+  if (i >= 0) return { area: label.slice(0, i), sub: label.slice(i + 3) };
+  return { area: label, sub: '' };
 }
 
 export default function GraphSection({ items, autoRun = true }: Props) {
@@ -52,7 +46,6 @@ export default function GraphSection({ items, autoRun = true }: Props) {
     if (autoRun && items.length > 0 && !graph && !loading && !error) run();
   }, [autoRun, items.length, run, graph, loading, error]);
 
-  const activities = groupByActivity(items);
   const selectedNodeData = graph && selectedNode != null ? graph.nodes.find((n) => n.id === String(selectedNode)) : null;
   const selectedItemIndices = selectedNodeData?.itemIndices ?? (selectedNode != null ? [selectedNode] : []);
   const connectedActivityIndices = new Set<number>();
@@ -85,27 +78,30 @@ export default function GraphSection({ items, autoRun = true }: Props) {
       {graph && graph.nodes.length > 0 && (
         <div className={styles.graphLayout}>
           <div className={styles.activityTableWrap}>
-            <h3>활동별 기록</h3>
+            <h3>활동별 기록 (내용 요약)</h3>
             <table className={styles.activityTable}>
               <thead>
                 <tr>
                   <th>영역</th>
                   <th>구분</th>
-                  <th>건수</th>
+                  <th>내용 요약</th>
                 </tr>
               </thead>
               <tbody>
-                {activities.map((a, i) => (
-                  <tr
-                    key={i}
-                    className={selectedNode === i ? styles.selectedRow : ''}
-                    onClick={() => setSelectedNode(i)}
-                  >
-                    <td>{a.area}</td>
-                    <td>{a.sub}</td>
-                    <td>{a.itemIndices.length}</td>
-                  </tr>
-                ))}
+                {graph.nodes.map((node, i) => {
+                  const { area, sub } = parseLabel(node.label);
+                  return (
+                    <tr
+                      key={node.id}
+                      className={selectedNode === i ? styles.selectedRow : ''}
+                      onClick={() => setSelectedNode(i)}
+                    >
+                      <td>{area}</td>
+                      <td>{sub}</td>
+                      <td className={styles.cellSummary}>{node.contentSummary ?? '-'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -124,9 +120,9 @@ export default function GraphSection({ items, autoRun = true }: Props) {
               }}
               nodeColor={(node) => {
                 const id = (node as { id?: string }).id ?? '';
+                if (selectedNode === Number(id)) return '#f59e0b';
                 const links = linkCountByNode.get(id) ?? 0;
-                if (selectedNode === Number(id)) return '#2563eb';
-                return links >= 2 ? '#1e40af' : '#3b82f6';
+                return links >= 2 ? '#8b7cb8' : '#b8a9e0';
               }}
             />
           </div>
@@ -136,13 +132,14 @@ export default function GraphSection({ items, autoRun = true }: Props) {
         <div className={styles.detail}>
           <h4>선택한 활동</h4>
           <p className={styles.itemMeta}>{selectedNodeData.label}</p>
+          <p className={styles.itemContent}>{selectedNodeData.contentSummary ?? ''}</p>
           <ul className={styles.connectedList}>
             {selectedItemIndices.map((i: number) => {
               const it = items[i];
               if (!it) return null;
               return (
                 <li key={i}>
-                  <strong>[{i + 1}]</strong> {it.grade ? `${it.grade}학년 ` : ''}
+                  <strong>[원본 {i + 1}]</strong> {it.grade ? `${it.grade}학년 ` : ''}
                   {(it.content || '').slice(0, 120)}{(it.content || '').length > 120 ? '…' : ''}
                 </li>
               );

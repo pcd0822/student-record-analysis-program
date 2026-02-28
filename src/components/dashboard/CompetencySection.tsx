@@ -11,9 +11,9 @@ interface Props {
 }
 
 const COMPETENCY_COLORS: Record<string, string> = {
-  학업역량: '#2563eb',
-  진로역량: '#059669',
-  공동체역량: '#d97706',
+  학업역량: '#93c5fd',
+  진로역량: '#86efac',
+  공동체역량: '#fde047',
 };
 
 export default function CompetencySection({ items, onResult, autoRun = true }: Props) {
@@ -49,7 +49,7 @@ export default function CompetencySection({ items, onResult, autoRun = true }: P
     <section className={styles.section}>
       <h2>역량 진단 · 점수 · 보완 방향</h2>
       <p className={styles.hint}>
-        학종 3역량 기준으로 진단합니다. 영역별 역량 비율과 보완 방향을 확인할 수 있습니다.
+        학종 3역량 기준으로 진단합니다. 영역 내 구체적인 활동별 역량 비율과 보완 방향을 확인할 수 있습니다.
       </p>
       {loading && <p className={styles.loading}>역량 분석 중…</p>}
       {error && <p className={styles.error}>{error}</p>}
@@ -85,14 +85,14 @@ export default function CompetencySection({ items, onResult, autoRun = true }: P
               </div>
             </div>
           )}
-          {Array.isArray(result.areaCompetency) && result.areaCompetency.length > 0 && (
+          {(Array.isArray(result.activityCompetency) ? result.activityCompetency : result.areaCompetency)?.length ? (
             <div className={styles.block}>
-              <h3>영역별 역량 (기록 ↔ 점수)</h3>
+              <h3>활동별 역량 (기록 ↔ 점수)</h3>
               <div className={styles.recordCompetencyLayout}>
-                {result.areaCompetency.map((ac, i) => (
+                {(result.activityCompetency ?? result.areaCompetency ?? []).map((ac, i) => (
                   <div key={i} className={styles.recordCompetencyRow}>
                     <div className={styles.recordSide}>
-                      <strong>{ac.area}</strong>
+                      <strong>{ac.area}{ac.sub ? ` · ${ac.sub}` : ''}</strong>
                       {ac.summary && <p>{ac.summary}</p>}
                     </div>
                     <div className={styles.scoreSide}>
@@ -111,7 +111,7 @@ export default function CompetencySection({ items, onResult, autoRun = true }: P
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
           {Array.isArray(result.competencies) && result.competencies.length > 0 && (
             <div className={styles.block}>
               <h3>역량 진단</h3>
@@ -146,7 +146,7 @@ export default function CompetencySection({ items, onResult, autoRun = true }: P
               </ul>
             </div>
           )}
-          {!result.summary && !(Array.isArray(result.competencies) && result.competencies.length) && !(result.scores?.length) && !(result.areaCompetency?.length) && !suggestions.length && (
+          {!result.summary && !(Array.isArray(result.competencies) && result.competencies.length) && !(result.scores?.length) && !(result.activityCompetency?.length) && !(result.areaCompetency?.length) && !suggestions.length && (
             <pre className={styles.raw}>{JSON.stringify(result, null, 2)}</pre>
           )}
         </div>

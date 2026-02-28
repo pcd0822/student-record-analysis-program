@@ -1,31 +1,54 @@
 /**
- * 생기부 기록을 활동별로 세분화한 뒤, 활동 간 연결관계를 분석합니다.
+ * 생기부 기록을 활동별로 세분화(내용이 다른 단위 = 문단 단위)한 뒤, 활동 간 연결관계를 분석합니다.
+ * 인적·학적사항은 항상 제외합니다.
  * POST body: { items: RecordItem[], prompt?: string }
- * Returns: { nodes: [{ id, label, itemIndex, itemIndices }], links: [{ source, target, reason }] }
- * - nodes: 활동 단위 (영역+구분으로 그룹), itemIndices = 해당 활동에 속한 원본 항목 인덱스 배열
+ * Returns: { nodes: [{ id, label, itemIndex, itemIndices, contentSummary }], links }
  */
 
 const OpenAI = require('openai').default;
 
-const DEFAULT_PROMPT = `다음 "활동"들(영역·구분별 단위) 사이 연결 관계를 **키워드**, **활동 주제**, **활동 내용** 세 가지 기준으로 분석해 주세요.
+const DEFAULT_PROMPT = `다음 "활동"들(같은 영역 내에서도 내용이 다른 활동은 별도 번호) 사이 연결 관계를 **키워드**, **활동 주제**, **활동 내용** 세 가지 기준으로 분석해 주세요.
 연관 쌍을 찾을 때: 공통 키워드, 유사 주제, 내용적 연관성을 한 줄로 reason에 적으세요.
 응답은 반드시 JSON만: { "pairs": [ { "indexA": 0, "indexB": 1, "reason": "한 줄", "strength": 1~3 } }, ... ] }
 indexA, indexB는 활동 번호(0부터). strength는 연결 강도(3=매우 강함, 2=강함, 1=약함).`;
 
-function groupByActivity(items) {
-  const map = new Map();
-  items.forEach((it, idx) => {
+/** 인적·학적사항 여부 (연결관계 분석 시 제외) */
+function isPersonalOrAcademic(it) {
+  const area = (it.area || '').trim();
+  const sub = (it.subCategory || it.label || '').trim();
+  const combined = `${area} ${sub}`;
+  return /인적|학적/i.test(combined);
+}
+
+/** 한 항목의 content를 문단 단위로 쪼갠다. 문단이 여러 개면 활동을 여러 개로 본다. */
+function splitContentIntoChunks(content) {
+  const raw = (content || '').trim();
+  if (!raw) return [];
+  const chunks = raw.split(/\n\n+/).map((s) => s.trim()).filter(Boolean);
+  return chunks.length > 0 ? chunks : [raw];
+}
+
+/** items에서 인적/학적 제외 후, 문단 단위로 활동을 나눈 목록 반환 */
+function buildActivitiesFromItems(items) {
+  const activities = [];
+  items.forEach((it, itemIdx) => {
+    if (isPersonalOrAcademic(it)) return;
     const area = it.area || '기타';
     const sub = it.subCategory || it.label || '기타';
-    const key = `${area}|${sub}`;
-    if (!map.has(key)) {
-      map.set(key, { key, area, sub, itemIndices: [], contents: [] });
-    }
-    const group = map.get(key);
-    group.itemIndices.push(idx);
-    group.contents.push((it.content || '').slice(0, 400));
+    const chunks = splitContentIntoChunks(it.content);
+    chunks.forEach((contentChunk, chunkIdx) => {
+      const summary = contentChunk.length > 120 ? contentChunk.slice(0, 120) + '…' : contentChunk;
+      activities.push({
+        area,
+        sub,
+        contentChunk: contentChunk.slice(0, 400),
+        contentSummary: summary,
+        itemIndex: activities.length,
+        itemIndices: [itemIdx],
+      });
+    });
   });
-  return Array.from(map.values());
+  return activities;
 }
 
 exports.handler = async (event) => {
@@ -51,9 +74,17 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'items array required' }) };
   }
 
-  const activities = groupByActivity(items);
+  const activities = buildActivitiesFromItems(items);
+  if (activities.length === 0) {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nodes: [], links: [], message: '인적·학적사항을 제외한 활동이 없습니다.' }),
+    };
+  }
+
   const listText = activities
-    .map((a, i) => `[활동 ${i}] ${a.area} - ${a.sub}\n${a.contents.join('\n')}`)
+    .map((a, i) => `[활동 ${i}] ${a.area} - ${a.sub}\n${a.contentChunk}`)
     .join('\n\n');
 
   const systemPrompt = userPrompt.trim() || DEFAULT_PROMPT;
@@ -83,6 +114,7 @@ exports.handler = async (event) => {
       label: `${a.area} · ${a.sub}`,
       itemIndex: i,
       itemIndices: a.itemIndices,
+      contentSummary: a.contentSummary,
     }));
     const links = pairs
       .filter((p) => typeof p.indexA === 'number' && typeof p.indexB === 'number' && p.indexA >= 0 && p.indexB < activities.length && p.indexA !== p.indexB)
