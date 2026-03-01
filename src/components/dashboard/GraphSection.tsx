@@ -69,7 +69,7 @@ export default function GraphSection({ items, autoRun = true }: Props) {
 
   return (
     <section className={styles.section}>
-      <h2>활동 연결관계</h2>
+      <h2><span className={styles.icon} aria-hidden>🔗</span> 활동 연결관계</h2>
       <p className={styles.hint}>
         키워드·활동 주제·활동 내용 기준으로 연결 관계를 분석합니다. 연결이 많은 노드는 굵게 표시됩니다.
       </p>
@@ -108,8 +108,8 @@ export default function GraphSection({ items, autoRun = true }: Props) {
           <div className={styles.graphWrap}>
             <ForceGraph2D
               graphData={graph}
-              width={500}
-              height={400}
+              width={360}
+              height={320}
               nodeLabel={(n) => (n as GraphNode).label}
               onNodeClick={(n) => setSelectedNode((n as GraphNode).itemIndex)}
               linkLabel={(l) => (l as { reason?: string }).reason || ''}

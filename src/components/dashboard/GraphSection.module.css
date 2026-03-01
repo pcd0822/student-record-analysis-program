@@ -1,16 +1,20 @@
 .section {
-  background: #faf5ff;
+  background: #fff;
   border-radius: 10px;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(147, 112, 219, 0.08);
-  border: 1px solid rgba(196, 181, 253, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
 }
 
 .section h2 {
   margin: 0 0 0.5rem;
   font-size: 1.15rem;
-  color: #1a1d29;
+  color: #0f172a;
+}
+
+.section h2 .icon {
+  margin-right: 0.35rem;
 }
 
 .hint {
@@ -64,8 +68,8 @@
 
 .graphLayout {
   display: grid;
-  grid-template-columns: minmax(280px, 380px) 1fr;
-  gap: 1rem;
+  grid-template-columns: minmax(400px, 1.5fr) 380px;
+  gap: 1.25rem;
   align-items: start;
 }
 
@@ -95,8 +99,8 @@
 }
 
 .activityTable th {
-  background: #f5f3ff;
-  color: #5b21b6;
+  background: #f8fafc;
+  color: #334155;
 }
 
 .activityTable tbody tr {
@@ -104,35 +108,37 @@
 }
 
 .activityTable tbody tr:hover {
-  background: #ede9fe;
+  background: #f1f5f9;
 }
 
 .selectedRow {
-  background: #ede9fe !important;
-  border-left: 3px solid #a78bfa;
+  background: #eef2ff !important;
+  border-left: 3px solid #6366f1;
 }
 
 .cellSummary {
-  max-width: 240px;
+  max-width: 380px;
   font-size: 0.8rem;
   line-height: 1.35;
   word-break: break-word;
-  color: #4c1d95;
+  color: #475569;
 }
 
 .graphWrap {
   margin-top: 0;
-  border: 1px solid rgba(196, 181, 253, 0.5);
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
+  max-width: 380px;
+  max-height: 340px;
 }
 
 .detail {
   margin-top: 1rem;
   padding: 1rem;
-  background: #f5f3ff;
+  background: #f8fafc;
   border-radius: 8px;
-  border: 1px solid rgba(196, 181, 253, 0.4);
+  border: 1px solid #e2e8f0;
 }
 
 .detail h3,

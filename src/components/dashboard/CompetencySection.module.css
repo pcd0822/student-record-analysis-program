@@ -1,16 +1,20 @@
 .section {
-  background: #faf5ff;
+  background: #fff;
   border-radius: 10px;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(147, 112, 219, 0.08);
-  border: 1px solid rgba(196, 181, 253, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
 }
 
 .section h2 {
   margin: 0 0 0.5rem;
   font-size: 1.15rem;
-  color: #1a1d29;
+  color: #0f172a;
+}
+
+.section h2 .icon {
+  margin-right: 0.35rem;
 }
 
 .hint {
@@ -53,9 +57,68 @@
   resize: vertical;
 }
 
+.referenceBlock {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.referenceLabel {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.35rem;
+}
+
+.referenceNote {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+.referenceTextarea {
+  width: 100%;
+  max-width: 560px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  resize: vertical;
+  margin-bottom: 0.5rem;
+}
+
+.referenceTextarea:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.reanalyzeBtn {
+  padding: 0.4rem 0.8rem;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.reanalyzeBtn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.reanalyzeBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn {
   padding: 0.5rem 1rem;
-  background: #a78bfa;
+  background: #2563eb;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -64,7 +127,7 @@
 }
 
 .btn:hover:not(:disabled) {
-  background: #8b5cf6;
+  background: #1d4ed8;
 }
 
 .btn:disabled {
@@ -87,9 +150,109 @@
 .result {
   margin-top: 1rem;
   padding: 1rem;
-  background: #f5f3ff;
+  background: #f8fafc;
   border-radius: 8px;
-  border: 1px solid rgba(196, 181, 253, 0.35);
+  border: 1px solid #e2e8f0;
+}
+
+.pieSection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.pieWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pieSvg {
+  width: 160px;
+  height: 160px;
+}
+
+.pieLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.pieLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.pieDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.scoreBriefs {
+  flex: 1;
+  min-width: 200px;
+}
+
+.scoreBriefs p {
+  margin: 0 0 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 3px solid #94a3b8;
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.activityTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.activityTable th,
+.activityTable td {
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.activityTable th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cellSummary {
+  max-width: 280px;
+  word-break: break-word;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.cellFeedback {
+  max-width: 220px;
+  word-break: break-word;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.suggestionArea {
+  display: inline-block;
+  color: #2563eb;
+  margin-bottom: 0.25rem;
 }
 
 .barChart {
@@ -113,7 +276,7 @@
 
 .barTrack {
   height: 22px;
-  background: #ede9fe;
+  background: #e2e8f0;
   border-radius: 6px;
   overflow: hidden;
 }
@@ -150,9 +313,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   padding: 0.75rem;
-  background: #faf5ff;
+  background: #fff;
   border-radius: 8px;
-  border: 1px solid rgba(196, 181, 253, 0.5);
+  border: 1px solid #e2e8f0;
 }
 
 @media (max-width: 600px) {
@@ -164,7 +327,7 @@
 .recordSide strong {
   display: block;
   margin-bottom: 0.25rem;
-  color: #5b21b6;
+  color: #1e40af;
 }
 
 .recordSide p {

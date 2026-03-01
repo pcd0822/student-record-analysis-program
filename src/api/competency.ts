@@ -8,29 +8,36 @@ export interface AreaCompetency {
   academic: number;
   career: number;
   community: number;
-  /** 활동별 표시 시 구분(예: 세부 영역). 선택 */
   sub?: string;
+  grade?: number;
+  /** 특징적인 부분에 대한 피드백 */
+  feedback?: string;
 }
 
 export interface ActivityCompetency extends AreaCompetency {
   sub?: string;
+  grade?: number;
+  feedback?: string;
 }
 
 export interface CompetencyResult {
   summary?: string;
   competencies?: { name?: string; level?: string; evidence?: string }[];
   scores?: { name?: string; score?: number; brief?: string }[];
-  suggestions?: { competency?: string; activities?: { area?: string; description?: string }[] }[];
+  /** 영역별 구체적 탐구활동 (보완 방향) */
+  suggestions?: { area?: string; activities?: { description?: string }[] }[];
   areaCompetency?: AreaCompetency[];
-  /** 활동별 역량 (영역 내 내용이 다른 활동 단위). 있으면 이걸 우선 표시 */
   activityCompetency?: ActivityCompetency[];
 }
 
-export async function analyzeCompetency(items: RecordItem[]): Promise<CompetencyResult> {
+export async function analyzeCompetency(
+  items: RecordItem[],
+  options?: { referenceMaterials?: string }
+): Promise<CompetencyResult> {
   const res = await fetch(URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items }),
+    body: JSON.stringify({ items, referenceMaterials: options?.referenceMaterials }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || data?.detail || `요청 실패 (${res.status})`);

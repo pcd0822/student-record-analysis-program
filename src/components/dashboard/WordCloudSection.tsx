@@ -41,7 +41,7 @@ export default function WordCloudSection({ items, autoRun = true }: Props) {
 
   return (
     <section className={styles.section}>
-      <h2>키워드 워드 클라우드</h2>
+      <h2><span aria-hidden>📊</span> 키워드 워드 클라우드</h2>
       <p className={styles.hint}>
         생기부 텍스트를 형태소 분석해 실질형태소만 추출합니다. Netlify에 BAREUN_API_KEY가 있으면 바른AI를 먼저 사용하고, 실패 시 OpenAI로 자동 전환됩니다. 504가 나오면 잠시 후 다시 시도해 보세요.
       </p>
