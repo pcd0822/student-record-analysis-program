@@ -56,7 +56,8 @@ function extractTextNodes(html: string): { text: string; context: string }[] {
     const el = node as Element;
     const tag = el.tagName.toLowerCase();
     const labels = [...parentLabels];
-    const titleArea = el.getAttribute?.('title') ? getAreaFromTitleAttr(el.getAttribute('title')) : null;
+    const titleVal = el.getAttribute?.('title');
+    const titleArea = titleVal != null ? getAreaFromTitleAttr(titleVal) : null;
     if (titleArea) labels.push(titleArea);
     if (['th', 'td', 'caption', 'h1', 'h2', 'h3', 'h4', 'strong', 'b'].includes(tag)) {
       const t = el.textContent?.trim();
@@ -132,7 +133,8 @@ function extractFromTables(doc: Document): { text: string; context: string }[] {
       const contentCells: string[] = [];
       cells.forEach((cell) => {
         const el = cell as Element;
-        const titleArea = el.getAttribute?.('title') ? getAreaFromTitleAttr(el.getAttribute('title')) : null;
+        const titleVal = el.getAttribute?.('title');
+        const titleArea = titleVal != null ? getAreaFromTitleAttr(titleVal) : null;
         if (titleArea) rowContext = titleArea;
         const t = cell.textContent?.trim() || '';
         const asActivity = getActivityTypeFromCell(t);

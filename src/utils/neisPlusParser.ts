@@ -150,6 +150,34 @@ function splitBySubjects(content: string): { subject?: string; body: string }[] 
   return [{ body: content }];
 }
 
+/**
+ * 테이블에서 "헤더 행"의 셀별 영역 매핑 (열 인덱스 → 자율/동아리/진로).
+ * 첫 행에 .tbl-inherit[title="자율활동"] 등이 열별로 있으면 해당 맵을 반환.
+ */
+function getTableColumnAreas(table: Element): Map<number, string> | null {
+  const headerRow = table.querySelector('thead tr') || table.querySelector('tr');
+  if (!headerRow) return null;
+  const cells = headerRow.querySelectorAll('td, th');
+  const map = new Map<number, string>();
+  cells.forEach((cell, colIndex) => {
+    const titleEl = cell.querySelector?.('.tbl-inherit[title], [title="자율활동"], [title="자율 활동"], [title="동아리활동"], [title="동아리 활동"], [title="봉사활동"], [title="봉사 활동"], [title="진로활동"], [title="진로 활동"]');
+    if (titleEl) {
+      const area = normalizeTitleToArea(titleEl.getAttribute('title') || '');
+      if (area) map.set(colIndex, area);
+    }
+  });
+  return map.size > 0 ? map : null;
+}
+
+/** 셀의 열 인덱스 (같은 행 내 td/th 순서) */
+function getCellColumnIndex(tdOrTh: Element): number {
+  const tr = tdOrTh.closest('tr');
+  if (!tr) return 0;
+  const cells = tr.querySelectorAll('td, th');
+  const idx = Array.from(cells).indexOf(tdOrTh);
+  return idx >= 0 ? idx : 0;
+}
+
 /** 상위 섹션 제목 찾기 (h2.sub-tit-b) */
 function getSectionTitle(el: Element): string | undefined {
   let parent: Element | null = el;
@@ -211,9 +239,14 @@ export function parseNeisPlusHtml(html: string): RecordItem[] {
     const section = getSectionTitle(wsBs);
 
     if (tr) {
+      const table = tr.closest('table');
+      const columnAreas = table ? getTableColumnAreas(table) : null;
+      const cell = wsBs.closest('td, th');
+      const areaByColumn = columnAreas && cell ? columnAreas.get(getCellColumnIndex(cell)) : undefined;
+
       const ctx = getRowContext(tr);
       const grade = ctx.grade;
-      const area = ctx.area || section || inferAreaFromContent(text);
+      const area = areaByColumn ?? ctx.area ?? section ?? inferAreaFromContent(text);
       const parts = splitBySubjects(text);
 
       for (const part of parts) {
@@ -296,7 +329,7 @@ export function parseNeisPlusHtml(html: string): RecordItem[] {
     if (!rowArea) return;
     const table = tr.closest('table');
     if (!table) return;
-    const rows = Array.from(table.querySelectorAll('tr'));
+    const rows = Array.from(table.querySelectorAll('tr')) as Element[];
     const startIdx = rows.indexOf(tr);
     if (startIdx < 0) return;
     for (let i = startIdx; i < rows.length; i++) {
