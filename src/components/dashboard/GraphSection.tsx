@@ -25,8 +25,10 @@ export default function GraphSection({ items, autoRun = true }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<number | null>(null);
-  const [manualLinks, setManualLinks] = useState<{ source: string; target: string }[]>([]);
-  const [dragNode, setDragNode] = useState<number | null>(null);
+  const [manualLinks, setManualLinks] = useState<{ source: string; target: string; reason: string }[]>([]);
+  const [addSource, setAddSource] = useState('');
+  const [addTarget, setAddTarget] = useState('');
+  const [addReason, setAddReason] = useState('');
 
   const run = useCallback(() => {
     if (items.length === 0) {
@@ -53,7 +55,7 @@ export default function GraphSection({ items, autoRun = true }: Props) {
   const allLinks = graph
     ? [
         ...graph.links,
-        ...manualLinks.map((m) => ({ source: m.source, target: m.target, reason: '직접 연결', strength: 1 })),
+        ...manualLinks.map((m) => ({ source: m.source, target: m.target, reason: m.reason || '직접 연결', strength: 1 })),
       ]
     : [];
   const connectedActivityIndices = new Set<number>();
@@ -74,23 +76,17 @@ export default function GraphSection({ items, autoRun = true }: Props) {
   });
   const maxLinks = Math.max(...linkCountByNode.values(), 1);
 
-  const handleRowDragStart = (e: React.DragEvent, nodeIndex: number) => {
-    setDragNode(nodeIndex);
-    e.dataTransfer.setData('text/plain', String(nodeIndex));
-    e.dataTransfer.effectAllowed = 'link';
+  const handleAddManualLink = () => {
+    if (!addSource || !addTarget || addSource === addTarget || !graph) return;
+    setManualLinks((prev) => [...prev, { source: addSource, target: addTarget, reason: addReason.trim() || '직접 연결' }]);
+    setAddSource('');
+    setAddTarget('');
+    setAddReason('');
   };
-  const handleRowDrop = (e: React.DragEvent, targetIndex: number) => {
-    e.preventDefault();
-    const sourceIndex = dragNode ?? (e.dataTransfer.getData('text/plain') ? parseInt(e.dataTransfer.getData('text/plain'), 10) : null);
-    setDragNode(null);
-    if (sourceIndex == null || sourceIndex === targetIndex || !graph) return;
-    const sourceId = graph.nodes[sourceIndex]?.id;
-    const targetId = graph.nodes[targetIndex]?.id;
-    if (!sourceId || !targetId) return;
-    setManualLinks((prev) => [...prev, { source: sourceId, target: targetId }]);
+
+  const removeManualLink = (index: number) => {
+    setManualLinks((prev) => prev.filter((_, i) => i !== index));
   };
-  const handleRowDragOver = (e: React.DragEvent) => e.preventDefault();
-  const handleRowDragEnd = () => setDragNode(null);
 
   return (
     <section className={styles.section}>
@@ -105,7 +101,6 @@ export default function GraphSection({ items, autoRun = true }: Props) {
         <div className={styles.graphLayout}>
           <div className={styles.activityTableWrap}>
             <h3>활동별 기록 (내용 요약)</h3>
-            <p className={styles.dragHint}>연결 추가: 행을 드래그해 다른 행 위에 놓으면 연결이 추가됩니다.</p>
             <table className={styles.activityTable}>
               <thead>
                 <tr>
@@ -120,13 +115,8 @@ export default function GraphSection({ items, autoRun = true }: Props) {
                   return (
                     <tr
                       key={node.id}
-                      className={`${selectedNode === i ? styles.selectedRow : ''} ${dragNode === i ? styles.dragging : ''}`}
+                      className={selectedNode === i ? styles.selectedRow : ''}
                       onClick={() => setSelectedNode(i)}
-                      draggable
-                      onDragStart={(e) => handleRowDragStart(e, i)}
-                      onDrop={(e) => handleRowDrop(e, i)}
-                      onDragOver={handleRowDragOver}
-                      onDragEnd={handleRowDragEnd}
                     >
                       <td>{area}</td>
                       <td>{sub}</td>
@@ -159,11 +149,65 @@ export default function GraphSection({ items, autoRun = true }: Props) {
             />
           </div>
         </div>
-        {manualLinks.length > 0 && (
-          <p className={styles.manualLinksNote}>
-            직접 추가한 연결 {manualLinks.length}개 · <button type="button" className={styles.clearManualBtn} onClick={() => setManualLinks([])}>초기화</button>
-          </p>
-        )}
+
+        <div className={styles.manualSection}>
+          <h3>연결망 직접 추가</h3>
+          <p className={styles.manualHint}>활동 A → 활동 B를 선택하고 연결 이유를 입력한 뒤 추가하세요.</p>
+          <div className={styles.manualForm}>
+            <select
+              className={styles.manualSelect}
+              value={addSource}
+              onChange={(e) => setAddSource(e.target.value)}
+              aria-label="활동 A"
+            >
+              <option value="">— 활동 A —</option>
+              {graph.nodes.map((node, i) => (
+                <option key={node.id} value={node.id}>
+                  [{i + 1}] {node.label}
+                </option>
+              ))}
+            </select>
+            <span className={styles.manualArrow}>→</span>
+            <select
+              className={styles.manualSelect}
+              value={addTarget}
+              onChange={(e) => setAddTarget(e.target.value)}
+              aria-label="활동 B"
+            >
+              <option value="">— 활동 B —</option>
+              {graph.nodes.map((node, i) => (
+                <option key={node.id} value={node.id}>
+                  [{i + 1}] {node.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              className={styles.manualReason}
+              placeholder="연결 이유"
+              value={addReason}
+              onChange={(e) => setAddReason(e.target.value)}
+            />
+            <button type="button" className={styles.manualAddBtn} onClick={handleAddManualLink} disabled={!addSource || !addTarget || addSource === addTarget}>
+              추가
+            </button>
+          </div>
+          {manualLinks.length > 0 && (
+            <ul className={styles.manualList}>
+              {manualLinks.map((m, idx) => {
+                const src = graph.nodes.find((n) => n.id === m.source);
+                const tgt = graph.nodes.find((n) => n.id === m.target);
+                return (
+                  <li key={idx} className={styles.manualItem}>
+                    <span>{src?.label ?? m.source} → {tgt?.label ?? m.target}</span>
+                    {m.reason && <span className={styles.manualItemReason}>{m.reason}</span>}
+                    <button type="button" className={styles.manualDelBtn} onClick={() => removeManualLink(idx)} aria-label="삭제">×</button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
         </>
       )}
       {selectedNodeData !== null && selectedNodeData !== undefined && (

@@ -18,6 +18,9 @@ function isNeisPlusFormat(html: string): boolean {
   );
 }
 
+/** title 속성으로 쓰이는 창의적 체험활동 영역 값 (정확히 일치) */
+const TITLE_ACTIVITY_AREAS = ['자율활동', '동아리활동', '봉사활동', '진로활동'] as const;
+
 /** 창의적 체험활동 하위 영역 매칭: 공백/표기 변형 포함 */
 const CREATIVE_ACTIVITY_PATTERNS: { key: string; patterns: string[] }[] = [
   { key: '자율활동', patterns: ['자율활동', '자율 활동'] },
@@ -40,16 +43,37 @@ function inferCreativeAreaFromRow(tr: Element): string | null {
   return matchCreativeActivityArea(rowText, rowText);
 }
 
+/** 요소나 그 이전 형제 tr에서 title="자율활동" 등 영역 속성 추출 */
+function getAreaFromTitleAttribute(tr: Element): string | null {
+  const check = (row: Element): string | null => {
+    for (const el of row.querySelectorAll('[title]')) {
+      const t = (el.getAttribute('title') || '').trim();
+      if (TITLE_ACTIVITY_AREAS.includes(t as (typeof TITLE_ACTIVITY_AREAS)[number])) return t;
+    }
+    return null;
+  };
+  let current: Element | null = tr;
+  while (current && current.tagName === 'TR') {
+    const area = check(current);
+    if (area) return area;
+    current = current.previousElementSibling;
+  }
+  return null;
+}
+
 /** tr에서 학년(숫자), 영역(자율활동 등) 추출 */
 function getRowContext(tr: Element): { grade?: number; area?: string; subCategory?: string } {
   const result: { grade?: number; area?: string; subCategory?: string } = {};
+  const titleArea = getAreaFromTitleAttribute(tr);
+  if (titleArea) result.area = titleArea;
+
   const withTitle = tr.querySelectorAll('.tbl-inherit[title]');
   withTitle.forEach((el) => {
     const title = (el.getAttribute('title') || '').trim();
     const text = el.textContent?.trim() || '';
     if (/^[123]$/.test(title) || /^[123]$/.test(text)) {
       result.grade = parseInt(title || text, 10);
-    } else {
+    } else if (!result.area) {
       const matchedArea = matchCreativeActivityArea(title, text);
       if (matchedArea) {
         result.area = matchedArea;
@@ -203,6 +227,44 @@ export function parseNeisPlusHtml(html: string): RecordItem[] {
         order: items.length + 1,
       });
     }
+  });
+
+  // 3) title="자율활동", title="동아리활동" 등: 해당 title 뒤(DOM 순서)의 .wsBs를 해당 영역으로 수집 (누락 방지)
+  const titleSelectors = TITLE_ACTIVITY_AREAS.map((a) => `[title="${a}"]`).join(', ');
+  const allTitleEls = Array.from(doc.querySelectorAll(titleSelectors));
+  allTitleEls.forEach((titleEl) => {
+    const area = (titleEl.getAttribute('title') || '').trim();
+    if (!area) return;
+    const root = titleEl.closest('table') || doc.body;
+    const nextSectionTitle = allTitleEls.find(
+      (other) => other !== titleEl && root.contains(other) && titleEl.compareDocumentPosition(other) === Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    const allWsBs = Array.from(root.querySelectorAll('.wsBs'));
+    const afterTitle = allWsBs.filter((el) => {
+      if (titleEl.compareDocumentPosition(el) !== Node.DOCUMENT_POSITION_FOLLOWING) return false;
+      if (nextSectionTitle && nextSectionTitle.compareDocumentPosition(el) === Node.DOCUMENT_POSITION_FOLLOWING) return false;
+      return true;
+    });
+    afterTitle.forEach((wsBs) => {
+      const text = wsBs.textContent?.trim();
+      if (!text || text.length < MIN_CONTENT_LENGTH) return;
+      const key = text.slice(0, 300);
+      if (seen.has(key)) return;
+      seen.add(key);
+      const parts = splitBySubjects(text);
+      for (const part of parts) {
+        const content = part.body || text;
+        const contentKey = content.slice(0, 300);
+        if (seen.has(contentKey)) continue;
+        seen.add(contentKey);
+        items.push({
+          area,
+          label: area,
+          content,
+          order: items.length + 1,
+        });
+      }
+    });
   });
 
   return items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));

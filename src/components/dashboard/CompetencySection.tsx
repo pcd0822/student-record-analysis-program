@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import { analyzeCompetency } from '@/api/competency';
-import { fetchDriveFolder, isDriveFolderInput } from '@/api/drive';
 import type { RecordItem } from '@/types';
 import type { CompetencyResult, ActivityCompetency } from '@/api/competency';
 import styles from './CompetencySection.module.css';
@@ -63,33 +62,31 @@ export default function CompetencySection({ items, onResult, autoRun = true }: P
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CompetencyResult | null>(null);
-  const [referenceMaterials, setReferenceMaterials] = useState('');
 
-  const run = useCallback(async () => {
+  const run = useCallback(async (isRetry = false) => {
     if (items.length === 0) {
       setError('항목이 없습니다.');
       return;
     }
     setLoading(true);
     setError(null);
-    setResult(null);
+    if (!isRetry) setResult(null);
     try {
-      let refText = referenceMaterials.trim();
-      if (refText && isDriveFolderInput(refText)) {
-        const { content } = await fetchDriveFolder(refText);
-        refText = content;
-      }
-      const data = await analyzeCompetency(items, {
-        referenceMaterials: refText || undefined,
-      });
+      const data = await analyzeCompetency(items);
       setResult(data);
       onResult?.(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : '분석 실패');
+      const msg = e instanceof Error ? e.message : '분석 실패';
+      if (!isRetry && (msg.includes('504') || msg.includes('502') || msg.includes('요청 실패 (504)') || msg.includes('요청 실패 (502)'))) {
+        setError('서버 응답 지연. 잠시 후 자동 재시도합니다…');
+        setTimeout(() => run(true), 3000);
+        return;
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
-  }, [items, onResult, referenceMaterials]);
+  }, [items, onResult]);
 
   useEffect(() => {
     if (autoRun && items.length > 0 && !result && !loading && !error) run();
@@ -103,27 +100,11 @@ export default function CompetencySection({ items, onResult, autoRun = true }: P
     <section className={styles.section}>
       <h2><span className={styles.icon}>🎯</span> 역량 진단 · 점수 · 보완 방향</h2>
       <p className={styles.hint}>
-        학종 3역량 기준으로 진단합니다. 참고 자료를 입력하면 역량 점수 측정 시 반드시 참고합니다.
+        학종 3역량 기준으로 진단합니다. 영역 내 활동별 역량과 보완 방향을 확인할 수 있습니다.
       </p>
-
-      <div className={styles.referenceBlock}>
-        <label className={styles.referenceLabel}>
-          참고 자료 (Google Drive 폴더 링크 또는 자료 요약)
-          <span className={styles.referenceNote}>
-            폴더 링크를 넣으면 폴더 내 문서를 자동으로 불러와 참고합니다. (폴더를 서비스 계정 이메일과 공유해야 함) 직접 텍스트를 붙여넣어도 됩니다.
-          </span>
-        </label>
-        <textarea
-          className={styles.referenceTextarea}
-          placeholder="예: https://drive.google.com/drive/folders/xxxx 또는 참고할 자료 텍스트"
-          value={referenceMaterials}
-          onChange={(e) => setReferenceMaterials(e.target.value)}
-          rows={3}
-        />
-        <button type="button" className={styles.reanalyzeBtn} onClick={run} disabled={loading}>
-          {loading ? '분석 중…' : '다시 분석'}
-        </button>
-      </div>
+      <button type="button" className={styles.reanalyzeBtn} onClick={() => run()} disabled={loading || items.length === 0}>
+        {loading ? '분석 중…' : '다시 분석'}
+      </button>
 
       {loading && <p className={styles.loading}>역량 분석 중…</p>}
       {error && <p className={styles.error}>{error}</p>}

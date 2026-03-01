@@ -30,9 +30,9 @@ export default function WordCloudSection({ items, autoRun = true }: Props) {
       setSource(result.source);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '분석 실패';
-      if (!isRetry && (msg.includes('504') || msg.includes('요청 실패 (504)'))) {
-        setError('504 타임아웃. 잠시 후 자동 재시도합니다…');
-        setTimeout(() => run(true), 2500);
+      if (!isRetry && (msg.includes('504') || msg.includes('502') || msg.includes('요청 실패 (504)') || msg.includes('요청 실패 (502)'))) {
+        setError('서버 응답 지연. 잠시 후 자동 재시도합니다…');
+        setTimeout(() => run(true), 3000);
         return;
       }
       setError(msg);
@@ -51,7 +51,7 @@ export default function WordCloudSection({ items, autoRun = true }: Props) {
     <section className={styles.section}>
       <h2><span aria-hidden>📊</span> 키워드 워드 클라우드</h2>
       <p className={styles.hint}>
-        생기부 텍스트를 형태소 분석해 실질형태소만 추출합니다. Netlify에 BAREUN_API_KEY가 있으면 바른AI를 먼저 사용하고, 실패 시 OpenAI로 자동 전환됩니다. 504가 나오면 잠시 후 다시 시도해 보세요.
+        생기부 텍스트를 형태소 분석해 실질형태소만 추출합니다. Netlify에 BAREUN_API_KEY가 있으면 바른AI를 먼저 사용하고, 실패 시 OpenAI로 자동 전환됩니다. 502/504가 나오면 자동으로 한 번 재시도합니다.
       </p>
       {!autoRun && (
         <button type="button" onClick={() => run()} disabled={loading || items.length === 0} className={styles.btn}>

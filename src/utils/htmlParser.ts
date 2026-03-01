@@ -41,7 +41,7 @@ function inferGrade(text: string, context: string): number | undefined {
   return undefined;
 }
 
-/** HTML 문자열에서 텍스트가 있는 노드들을 수집 (테이블 셀, div, p, li 등) */
+/** HTML 문자열에서 텍스트가 있는 노드들을 수집 (테이블 셀, div, p, li 등). title="자율활동" 등도 컨텍스트로 사용 */
 function extractTextNodes(html: string): { text: string; context: string }[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
@@ -56,6 +56,10 @@ function extractTextNodes(html: string): { text: string; context: string }[] {
     const el = node as Element;
     const tag = el.tagName.toLowerCase();
     const labels = [...parentLabels];
+    const titleVal = el.getAttribute?.('title')?.trim();
+    if (titleVal && (titleVal === '자율활동' || titleVal === '동아리활동' || titleVal === '봉사활동' || titleVal === '진로활동')) {
+      labels.push(titleVal);
+    }
     if (['th', 'td', 'caption', 'h1', 'h2', 'h3', 'h4', 'strong', 'b'].includes(tag)) {
       const t = el.textContent?.trim();
       if (t) labels.push(t);
@@ -82,7 +86,27 @@ function getActivityTypeFromCell(cellText: string): string | null {
   return null;
 }
 
-/** 테이블 기반 추출: th+td 쌍 또는 td만 있는 행에서 내용 수집. 행의 첫 셀들에서 자율/동아리/진로 등 보정 */
+const TITLE_ACTIVITY_VALUES = ['자율활동', '동아리활동', '봉사활동', '진로활동'] as const;
+
+/** tr 또는 이전 형제 tr에서 title="자율활동" 등 영역 속성 추출 */
+function getContextFromTitleAttr(tr: Element): string | null {
+  const check = (row: Element): string | null => {
+    for (const el of row.querySelectorAll('[title]')) {
+      const t = (el.getAttribute('title') || '').trim();
+      if (TITLE_ACTIVITY_VALUES.includes(t as (typeof TITLE_ACTIVITY_VALUES)[number])) return t;
+    }
+    return null;
+  };
+  let cur: Element | null = tr;
+  while (cur && cur.tagName === 'TR') {
+    const v = check(cur);
+    if (v) return v;
+    cur = cur.previousElementSibling;
+  }
+  return null;
+}
+
+/** 테이블 기반 추출: th+td 쌍 또는 td만 있는 행에서 내용 수집. title 속성·행 텍스트로 자율/동아리 등 보정 */
 function extractFromTables(doc: Document): { text: string; context: string }[] {
   const results: { text: string; context: string }[] = [];
   const tables = doc.querySelectorAll('table');
@@ -90,10 +114,18 @@ function extractFromTables(doc: Document): { text: string; context: string }[] {
     const rows = table.querySelectorAll('tr');
     let currentContext = '';
     rows.forEach((tr) => {
+      const titleContext = getContextFromTitleAttr(tr);
+      if (titleContext) currentContext = titleContext;
+
       const cells = tr.querySelectorAll('th, td');
-      let rowContext = currentContext;
+      let rowContext = titleContext || currentContext;
       const contentCells: string[] = [];
       cells.forEach((cell) => {
+        const el = cell as Element;
+        const titleAttr = el.getAttribute?.('title')?.trim();
+        if (titleAttr && TITLE_ACTIVITY_VALUES.includes(titleAttr as (typeof TITLE_ACTIVITY_VALUES)[number])) {
+          rowContext = titleAttr;
+        }
         const t = cell.textContent?.trim() || '';
         const asActivity = getActivityTypeFromCell(t);
         const isTh = cell.tagName.toLowerCase() === 'th';
