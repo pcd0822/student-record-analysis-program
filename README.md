@@ -68,6 +68,18 @@ netlify dev
 - 바른AI 형태소 분석을 쓰려면 `BAREUN_API_KEY` 추가 (https://api.bareun.ai 사용). 미설정 시 워드 클라우드는 OpenAI로 키워드 추출.
 - 빌드 명령: `npm run build`, 배포 디렉터리: `dist`, Functions 디렉터리: `netlify/functions`.
 
+### Google Drive 참고 자료 연동 (선택)
+
+역량 분석 시 "참고 자료"에 **Google Drive 폴더 링크**를 넣으면, 폴더 안의 문서(Google Docs, 텍스트 파일 등)를 자동으로 불러와 역량 점수 측정에 반영합니다.
+
+1. **Google Cloud Console**에서 프로젝트 생성 후 **Google Drive API** 사용 설정.
+2. **서비스 계정** 생성 → 키(JSON) 다운로드.
+3. 넷리파이 환경 변수에 `GOOGLE_SERVICE_ACCOUNT_JSON` 추가. 값은 JSON 파일 내용을 **한 줄 문자열**로 넣습니다 (줄바꿈 제거 또는 이스케이프).
+4. 참고할 **Drive 폴더**를 서비스 계정 이메일(`xxx@프로젝트명.iam.gserviceaccount.com`)과 **"뷰어"**로 공유.
+5. 대시보드 역량 섹션에서 해당 폴더의 "공유하기" 링크(예: `https://drive.google.com/drive/folders/xxxx`)를 참고 자료 칸에 붙여넣고 "다시 분석" 실행.
+
+지원 형식: Google Docs(문서), 텍스트/CSV/Markdown 파일. PDF·이미지는 제외됩니다.
+
 ## 3단계 구현 내용
 
 - **섹션1 · 워드 클라우드**: 생기부 텍스트를 형태소 분석해 실질형태소만 추출해 키워드 빈도로 표시. **바른AI** API(`BAREUN_API_KEY`) 사용, 미설정 시 OpenAI로 키워드 추출.

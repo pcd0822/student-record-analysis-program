@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { analyzeCompetency } from '@/api/competency';
+import { fetchDriveFolder, isDriveFolderInput } from '@/api/drive';
 import type { RecordItem } from '@/types';
 import type { CompetencyResult, ActivityCompetency } from '@/api/competency';
 import styles from './CompetencySection.module.css';
@@ -64,7 +65,7 @@ export default function CompetencySection({ items, onResult, autoRun = true }: P
   const [result, setResult] = useState<CompetencyResult | null>(null);
   const [referenceMaterials, setReferenceMaterials] = useState('');
 
-  const run = useCallback(() => {
+  const run = useCallback(async () => {
     if (items.length === 0) {
       setError('항목이 없습니다.');
       return;
@@ -72,13 +73,22 @@ export default function CompetencySection({ items, onResult, autoRun = true }: P
     setLoading(true);
     setError(null);
     setResult(null);
-    analyzeCompetency(items, { referenceMaterials: referenceMaterials.trim() || undefined })
-      .then((data) => {
-        setResult(data);
-        onResult?.(data);
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : '분석 실패'))
-      .finally(() => setLoading(false));
+    try {
+      let refText = referenceMaterials.trim();
+      if (refText && isDriveFolderInput(refText)) {
+        const { content } = await fetchDriveFolder(refText);
+        refText = content;
+      }
+      const data = await analyzeCompetency(items, {
+        referenceMaterials: refText || undefined,
+      });
+      setResult(data);
+      onResult?.(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '분석 실패');
+    } finally {
+      setLoading(false);
+    }
   }, [items, onResult, referenceMaterials]);
 
   useEffect(() => {
@@ -99,11 +109,13 @@ export default function CompetencySection({ items, onResult, autoRun = true }: P
       <div className={styles.referenceBlock}>
         <label className={styles.referenceLabel}>
           참고 자료 (Google Drive 폴더 링크 또는 자료 요약)
-          <span className={styles.referenceNote}>입력 시 역량 점수 측정에 반드시 참고됩니다.</span>
+          <span className={styles.referenceNote}>
+            폴더 링크를 넣으면 폴더 내 문서를 자동으로 불러와 참고합니다. (폴더를 서비스 계정 이메일과 공유해야 함) 직접 텍스트를 붙여넣어도 됩니다.
+          </span>
         </label>
         <textarea
           className={styles.referenceTextarea}
-          placeholder="예: 구글 드라이브 폴더 링크 또는 참고할 자료의 요약 텍스트를 붙여넣으세요."
+          placeholder="예: https://drive.google.com/drive/folders/xxxx 또는 참고할 자료 텍스트"
           value={referenceMaterials}
           onChange={(e) => setReferenceMaterials(e.target.value)}
           rows={3}

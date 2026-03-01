@@ -4,11 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "json-to-env": "node scripts/json-to-env.js",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "googleapis": "^144.0.0",
     "firebase": "^10.7.1",
     "openai": "^4.52.0",
     "react": "^18.2.0",
