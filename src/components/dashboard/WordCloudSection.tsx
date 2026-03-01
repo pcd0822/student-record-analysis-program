@@ -16,7 +16,7 @@ export default function WordCloudSection({ items, autoRun = true }: Props) {
   const [source, setSource] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const run = useCallback(() => {
+  const run = useCallback(async (isRetry = false) => {
     const text = items.map((i) => i.content).join('\n');
     if (!text.trim()) {
       setError('분석할 내용이 없습니다.');
@@ -24,13 +24,21 @@ export default function WordCloudSection({ items, autoRun = true }: Props) {
     }
     setLoading(true);
     setError(null);
-    analyzeMorphology(text)
-      .then(({ words: w, source: s }) => {
-        setWords(w);
-        setSource(s);
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : '분석 실패'))
-      .finally(() => setLoading(false));
+    try {
+      const result = await analyzeMorphology(text);
+      setWords(result.words);
+      setSource(result.source);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '분석 실패';
+      if (!isRetry && (msg.includes('504') || msg.includes('요청 실패 (504)'))) {
+        setError('504 타임아웃. 잠시 후 자동 재시도합니다…');
+        setTimeout(() => run(true), 2500);
+        return;
+      }
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   }, [items]);
 
   useEffect(() => {
@@ -46,7 +54,7 @@ export default function WordCloudSection({ items, autoRun = true }: Props) {
         생기부 텍스트를 형태소 분석해 실질형태소만 추출합니다. Netlify에 BAREUN_API_KEY가 있으면 바른AI를 먼저 사용하고, 실패 시 OpenAI로 자동 전환됩니다. 504가 나오면 잠시 후 다시 시도해 보세요.
       </p>
       {!autoRun && (
-        <button type="button" onClick={run} disabled={loading || items.length === 0} className={styles.btn}>
+        <button type="button" onClick={() => run()} disabled={loading || items.length === 0} className={styles.btn}>
           {loading ? '분석 중…' : '워드 클라우드 생성'}
         </button>
       )}

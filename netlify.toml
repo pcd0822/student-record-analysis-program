@@ -6,6 +6,18 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# 함수 타임아웃 (504/502 방지). 기본 10초 → 26초
+[functions]
+  node_bundler = "esbuild"
+[functions."*"]
+  timeout = 26
+[functions.morphology]
+  timeout = 26
+[functions.fetch-drive-folder]
+  timeout = 26
+[functions.competency]
+  timeout = 26
+
 # SPA: all routes serve index.html for client-side routing
 [[redirects]]
   from = "/*"

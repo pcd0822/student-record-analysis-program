@@ -69,6 +69,16 @@ function getRowContext(tr: Element): { grade?: number; area?: string; subCategor
     });
   }
   if (!result.area) {
+    tr.querySelectorAll('td, th').forEach((cell) => {
+      if (result.area) return;
+      const t = (cell.textContent || '').trim();
+      if (t && t.length <= 50 && !/^[123]$/.test(t)) {
+        const matched = matchCreativeActivityArea(t, t);
+        if (matched) result.area = matched;
+      }
+    });
+  }
+  if (!result.area) {
     const inferred = inferCreativeAreaFromRow(tr);
     if (inferred) result.area = inferred;
   }

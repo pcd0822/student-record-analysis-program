@@ -7,7 +7,7 @@
 const { google } = require('googleapis');
 const pdfParse = require('pdf-parse');
 
-const MAX_TOTAL_CHARS = 120000;
+const MAX_TOTAL_CHARS = 80000;
 const DRIVE_FOLDER_URL_PATTERN = /drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/;
 const DRIVE_OPEN_ID_PATTERN = /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/;
 
@@ -112,8 +112,6 @@ exports.handler = async (event) => {
     const drive = google.drive({ version: 'v3', auth });
 
     const files = await listFilesInFolder(drive, folderId);
-    const textParts = [];
-    let totalChars = 0;
     const exportable = [
       'application/vnd.google-apps.document',
       'text/plain',
@@ -121,6 +119,12 @@ exports.handler = async (event) => {
       'text/markdown',
       'application/pdf',
     ];
+    const fileList = files
+      .filter((f) => exportable.includes((f.mimeType || '').trim()))
+      .map((f) => ({ id: f.id, name: f.name || '제목 없음', mimeType: f.mimeType || '' }));
+
+    const textParts = [];
+    let totalChars = 0;
 
     for (const file of files) {
       if (totalChars >= MAX_TOTAL_CHARS) break;
@@ -152,6 +156,7 @@ exports.handler = async (event) => {
         content,
         fileCount: textParts.length,
         totalChars: content.length,
+        files: fileList,
       }),
     };
   } catch (err) {

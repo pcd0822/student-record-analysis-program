@@ -8,6 +8,7 @@ import Login from '@/pages/Login';
 import Upload from '@/pages/Upload';
 import View from '@/pages/View';
 import Dashboard from '@/pages/Dashboard';
+import Rag from '@/pages/Rag';
 
 initFirebase();
 
@@ -94,6 +95,7 @@ export default function App() {
           }
         >
           <Route index element={<Navigate to="/upload" replace />} />
+          <Route path="rag" element={<Rag />} />
           <Route path="upload" element={<Upload />} />
           <Route path="view" element={<View />} />
           <Route path="dashboard/:studentId" element={<Dashboard />} />

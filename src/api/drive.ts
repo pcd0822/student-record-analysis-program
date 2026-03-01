@@ -1,9 +1,16 @@
 const URL = '/.netlify/functions/fetch-drive-folder';
 
+export interface DriveFileInfo {
+  id: string;
+  name: string;
+  mimeType: string;
+}
+
 export interface FetchDriveFolderResult {
   content: string;
   fileCount: number;
   totalChars: number;
+  files?: DriveFileInfo[];
 }
 
 /**

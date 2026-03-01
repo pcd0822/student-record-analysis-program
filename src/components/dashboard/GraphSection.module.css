@@ -85,6 +85,36 @@
   color: #374151;
 }
 
+.dragHint {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.activityTable tbody tr.dragging {
+  opacity: 0.6;
+}
+
+.manualLinksNote {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.clearManualBtn {
+  margin-left: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.clearManualBtn:hover {
+  background: #f1f5f9;
+}
+
 .activityTable {
   width: 100%;
   border-collapse: collapse;

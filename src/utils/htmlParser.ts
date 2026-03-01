@@ -66,7 +66,23 @@ function extractTextNodes(html: string): { text: string; context: string }[] {
   return results;
 }
 
-/** 테이블 기반 추출: th+td 쌍 또는 td만 있는 행에서 내용 수집 */
+/** 셀 텍스트가 창의적 체험 하위(자율/동아리/봉사/진로)인지 확인 후 영역 반환 */
+const ACTIVITY_TYPE_PATTERNS = [
+  { key: '자율활동', patterns: ['자율활동', '자율 활동'] },
+  { key: '동아리활동', patterns: ['동아리활동', '동아리 활동', '동아리'] },
+  { key: '봉사활동', patterns: ['봉사활동', '봉사 활동'] },
+  { key: '진로활동', patterns: ['진로활동', '진로 활동'] },
+];
+function getActivityTypeFromCell(cellText: string): string | null {
+  const t = (cellText || '').trim();
+  if (!t || t.length > 50) return null;
+  for (const { key, patterns } of ACTIVITY_TYPE_PATTERNS) {
+    if (patterns.some((p) => t.includes(p))) return key;
+  }
+  return null;
+}
+
+/** 테이블 기반 추출: th+td 쌍 또는 td만 있는 행에서 내용 수집. 행의 첫 셀들에서 자율/동아리/진로 등 보정 */
 function extractFromTables(doc: Document): { text: string; context: string }[] {
   const results: { text: string; context: string }[] = [];
   const tables = doc.querySelectorAll('table');
@@ -74,15 +90,31 @@ function extractFromTables(doc: Document): { text: string; context: string }[] {
     const rows = table.querySelectorAll('tr');
     let currentContext = '';
     rows.forEach((tr) => {
-      const ths = tr.querySelectorAll('th');
-      const tds = tr.querySelectorAll('td');
-      ths.forEach((th) => {
-        const t = th.textContent?.trim();
-        if (t) currentContext = t;
+      const cells = tr.querySelectorAll('th, td');
+      let rowContext = currentContext;
+      const contentCells: string[] = [];
+      cells.forEach((cell) => {
+        const t = cell.textContent?.trim() || '';
+        const asActivity = getActivityTypeFromCell(t);
+        const isTh = cell.tagName.toLowerCase() === 'th';
+        const isTd = cell.tagName.toLowerCase() === 'td';
+        if (asActivity) {
+          rowContext = asActivity;
+        } else if (isTh && t) {
+          rowContext = t;
+        }
+        if (t && isTh) {
+          currentContext = t;
+        }
+        if (t && isTd) {
+          if (!asActivity || t.length > 40) contentCells.push(t);
+        }
       });
-      tds.forEach((td) => {
-        const text = td.textContent?.trim();
-        if (text && text.length > 1) results.push({ text, context: currentContext });
+      if (rowContext) currentContext = rowContext;
+      contentCells.forEach((text) => {
+        if (text.length > 1 && !/^\s*[-·]\s*$/.test(text)) {
+          results.push({ text, context: rowContext || currentContext });
+        }
       });
     });
   });

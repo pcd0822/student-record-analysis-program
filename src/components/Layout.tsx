@@ -9,6 +9,12 @@ export default function Layout() {
         <h1 className={styles.title}>생기부 분석 프로그램</h1>
         <nav className={styles.nav}>
           <NavLink
+            to="/rag"
+            className={({ isActive }) => [styles.navLink, isActive ? styles.navActive : ''].filter(Boolean).join(' ')}
+          >
+            RAG
+          </NavLink>
+          <NavLink
             to="/upload"
             className={({ isActive }) => [styles.navLink, isActive ? styles.navActive : ''].filter(Boolean).join(' ')}
           >

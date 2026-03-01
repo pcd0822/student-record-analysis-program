@@ -85,7 +85,7 @@ exports.handler = async (event) => {
     .map((a, i) => `[활동 ${i}] 학년:${a.grade ?? '-'} ${a.area} - ${a.sub}\n${a.contentChunk}`)
     .join('\n\n');
   const refBlock = referenceMaterials.trim()
-    ? `\n\n【참고 자료 - 반드시 참고하여 역량 점수를 측정하세요】\n${referenceMaterials.slice(0, 8000)}`
+    ? `\n\n【참고 자료 - 반드시 참고하여 역량 점수를 측정하세요】\n${referenceMaterials.slice(0, 6000)}`
     : '';
   const userContent = `다음 생기부 기록(인적·학적사항 제외)을 위 지시에 따라 분석해 주세요.${refBlock}
 

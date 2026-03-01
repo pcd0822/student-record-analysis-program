@@ -25,6 +25,8 @@ export default function GraphSection({ items, autoRun = true }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<number | null>(null);
+  const [manualLinks, setManualLinks] = useState<{ source: string; target: string }[]>([]);
+  const [dragNode, setDragNode] = useState<number | null>(null);
 
   const run = useCallback(() => {
     if (items.length === 0) {
@@ -48,24 +50,47 @@ export default function GraphSection({ items, autoRun = true }: Props) {
 
   const selectedNodeData = graph && selectedNode != null ? graph.nodes.find((n) => n.id === String(selectedNode)) : null;
   const selectedItemIndices = selectedNodeData?.itemIndices ?? (selectedNode != null ? [selectedNode] : []);
+  const allLinks = graph
+    ? [
+        ...graph.links,
+        ...manualLinks.map((m) => ({ source: m.source, target: m.target, reason: '직접 연결', strength: 1 })),
+      ]
+    : [];
   const connectedActivityIndices = new Set<number>();
   if (graph && selectedNode != null) {
-    graph.links.forEach((l) => {
+    allLinks.forEach((l) => {
       if (l.source === String(selectedNode) || l.target === String(selectedNode)) {
         connectedActivityIndices.add(Number(l.source));
         connectedActivityIndices.add(Number(l.target));
       }
     });
   }
-
   const linkCountByNode = new Map<string, number>();
-  graph?.links.forEach((l) => {
+  allLinks.forEach((l) => {
     const s = String(l.source);
     const t = String(l.target);
     linkCountByNode.set(s, (linkCountByNode.get(s) ?? 0) + 1);
     linkCountByNode.set(t, (linkCountByNode.get(t) ?? 0) + 1);
   });
   const maxLinks = Math.max(...linkCountByNode.values(), 1);
+
+  const handleRowDragStart = (e: React.DragEvent, nodeIndex: number) => {
+    setDragNode(nodeIndex);
+    e.dataTransfer.setData('text/plain', String(nodeIndex));
+    e.dataTransfer.effectAllowed = 'link';
+  };
+  const handleRowDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    const sourceIndex = dragNode ?? (e.dataTransfer.getData('text/plain') ? parseInt(e.dataTransfer.getData('text/plain'), 10) : null);
+    setDragNode(null);
+    if (sourceIndex == null || sourceIndex === targetIndex || !graph) return;
+    const sourceId = graph.nodes[sourceIndex]?.id;
+    const targetId = graph.nodes[targetIndex]?.id;
+    if (!sourceId || !targetId) return;
+    setManualLinks((prev) => [...prev, { source: sourceId, target: targetId }]);
+  };
+  const handleRowDragOver = (e: React.DragEvent) => e.preventDefault();
+  const handleRowDragEnd = () => setDragNode(null);
 
   return (
     <section className={styles.section}>
@@ -76,9 +101,11 @@ export default function GraphSection({ items, autoRun = true }: Props) {
       {loading && <p className={styles.loading}>연결관계 분석 중…</p>}
       {error && <p className={styles.error}>{error}</p>}
       {graph && graph.nodes.length > 0 && (
+        <>
         <div className={styles.graphLayout}>
           <div className={styles.activityTableWrap}>
             <h3>활동별 기록 (내용 요약)</h3>
+            <p className={styles.dragHint}>연결 추가: 행을 드래그해 다른 행 위에 놓으면 연결이 추가됩니다.</p>
             <table className={styles.activityTable}>
               <thead>
                 <tr>
@@ -93,8 +120,13 @@ export default function GraphSection({ items, autoRun = true }: Props) {
                   return (
                     <tr
                       key={node.id}
-                      className={selectedNode === i ? styles.selectedRow : ''}
+                      className={`${selectedNode === i ? styles.selectedRow : ''} ${dragNode === i ? styles.dragging : ''}`}
                       onClick={() => setSelectedNode(i)}
+                      draggable
+                      onDragStart={(e) => handleRowDragStart(e, i)}
+                      onDrop={(e) => handleRowDrop(e, i)}
+                      onDragOver={handleRowDragOver}
+                      onDragEnd={handleRowDragEnd}
                     >
                       <td>{area}</td>
                       <td>{sub}</td>
@@ -107,7 +139,7 @@ export default function GraphSection({ items, autoRun = true }: Props) {
           </div>
           <div className={styles.graphWrap}>
             <ForceGraph2D
-              graphData={graph}
+              graphData={{ nodes: graph.nodes, links: allLinks }}
               width={360}
               height={320}
               nodeLabel={(n) => (n as GraphNode).label}
@@ -127,6 +159,12 @@ export default function GraphSection({ items, autoRun = true }: Props) {
             />
           </div>
         </div>
+        {manualLinks.length > 0 && (
+          <p className={styles.manualLinksNote}>
+            직접 추가한 연결 {manualLinks.length}개 · <button type="button" className={styles.clearManualBtn} onClick={() => setManualLinks([])}>초기화</button>
+          </p>
+        )}
+        </>
       )}
       {selectedNodeData !== null && selectedNodeData !== undefined && (
         <div className={styles.detail}>

@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { parseLifeRecordHtml } from '@/utils/htmlParser';
 import { saveRecord } from '@/firebase/records';
 import { getAuthInstance } from '@/firebase/config';
-import { analyzeItems } from '@/api/analyze';
 import type { RecordItem } from '@/types';
 import styles from './Upload.module.css';
 
@@ -51,7 +50,6 @@ export default function Upload() {
   const [viewMode, setViewMode] = useState<ViewMode>('byArea');
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [showDrafts, setShowDrafts] = useState(false);
 
@@ -84,46 +82,6 @@ export default function Upload() {
       next[index] = { ...next[index], draftContent };
       return next;
     });
-  }
-
-  async function handleAnalyze() {
-    if (items.length === 0) {
-      setMessage({ type: 'err', text: '먼저 생기부를 업로드해 주세요.' });
-      return;
-    }
-    setAnalyzing(true);
-    setMessage(null);
-    try {
-      const { itemsWithDrafts } = await analyzeItems(items);
-      setItems(itemsWithDrafts);
-      setShowDrafts(true);
-
-      const sid = studentId.trim();
-      const user = getAuthInstance().currentUser;
-      if (sid && user) {
-        try {
-          await saveRecord(sid, itemsWithDrafts, user.uid);
-          setAnalyzing(false);
-          setMessage({ type: 'ok', text: '초안 생성 및 저장이 완료되었습니다. 대시보드로 이동합니다.' });
-          navigate(`/dashboard/${sid}`, { replace: true });
-          return;
-        } catch (_) {
-          setMessage({
-            type: 'ok',
-            text: '초안 생성이 완료되었습니다. 저장에 실패해 대시보드로 이동하지 않았습니다. 학번을 확인하고 저장 버튼을 눌러 주세요.',
-          });
-        }
-      } else {
-        setMessage({
-          type: 'ok',
-          text: '초안 생성이 완료되었습니다. 학번을 입력한 뒤 저장하면 대시보드로 이동할 수 있습니다.',
-        });
-      }
-    } catch (e) {
-      setMessage({ type: 'err', text: e instanceof Error ? e.message : '분석에 실패했습니다.' });
-    } finally {
-      setAnalyzing(false);
-    }
   }
 
   function handleAddActivity() {
@@ -183,15 +141,6 @@ export default function Upload() {
 
   return (
     <div className={styles.page}>
-      {analyzing && (
-        <div className={styles.analyzeOverlay} aria-busy="true" aria-live="polite">
-          <div className={styles.analyzeModal}>
-            <div className={styles.analyzeSpinner} />
-            <p className={styles.analyzeText}>생기부 분석 중…</p>
-            <p className={styles.analyzeSub}>AI가 초안을 생성하는 동안 잠시만 기다려 주세요.</p>
-          </div>
-        </div>
-      )}
       <section className={styles.section}>
         <h2>생기부 업로드</h2>
         <p className={styles.hint}>
@@ -233,7 +182,6 @@ export default function Upload() {
                 setMessage(null);
                 try {
                   await saveRecord(sid, items, user.uid);
-                  setAnalyzing(false);
                   navigate(`/dashboard/${sid}`, { replace: true });
                 } catch (e) {
                   setMessage({ type: 'err', text: e instanceof Error ? e.message : '저장에 실패했습니다.' });
@@ -261,14 +209,6 @@ export default function Upload() {
                 내용 셀에서 서로 다른 활동은 <strong>빈 줄</strong>로 나누어 입력하세요. (예: 첫 번째 활동 내용 → 빈 줄 → 두 번째 활동 내용) 그러면 대시보드에서 활동별로 구분해 분석합니다.
               </p>
             )}
-            <button
-              type="button"
-              className={styles.analyzeBtn}
-              onClick={handleAnalyze}
-              disabled={analyzing || items.length === 0}
-            >
-              {analyzing ? '분석 중…' : '분석하기 (AI 초안 생성)'}
-            </button>
             {items.some((i) => i.draftContent) && (
               <button
                 type="button"
