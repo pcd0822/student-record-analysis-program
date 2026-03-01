@@ -63,23 +63,24 @@ export default function CompetencySection({ items, onResult, autoRun = true }: P
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CompetencyResult | null>(null);
 
-  const run = useCallback(async (isRetry = false) => {
+  const run = useCallback(async (retryCount = 0) => {
     if (items.length === 0) {
       setError('항목이 없습니다.');
       return;
     }
     setLoading(true);
     setError(null);
-    if (!isRetry) setResult(null);
+    if (retryCount === 0) setResult(null);
     try {
       const data = await analyzeCompetency(items);
       setResult(data);
       onResult?.(data);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '분석 실패';
-      if (!isRetry && (msg.includes('504') || msg.includes('502') || msg.includes('요청 실패 (504)') || msg.includes('요청 실패 (502)'))) {
-        setError('서버 응답 지연. 잠시 후 자동 재시도합니다…');
-        setTimeout(() => run(true), 3000);
+      const isServerError = /502|504|Bad Gateway|Gateway Timeout|요청 실패 \((502|504)\)/i.test(msg);
+      if (isServerError && retryCount < 2) {
+        setError(`서버 응답 지연. ${retryCount === 0 ? '잠시 후' : '다시 '} 자동 재시도합니다…`);
+        setTimeout(() => run(retryCount + 1), retryCount === 0 ? 4000 : 5000);
         return;
       }
       setError(msg);

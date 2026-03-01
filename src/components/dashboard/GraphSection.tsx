@@ -101,7 +101,7 @@ export default function GraphSection({ items, autoRun = true }: Props) {
         <div className={styles.graphLayout}>
           <div className={styles.activityTableWrap}>
             <h3>활동별 기록 (내용 요약)</h3>
-            <table className={styles.activityTable}>
+            <table className={styles.activityTable} aria-label="활동별 기록 테이블">
               <thead>
                 <tr>
                   <th>영역</th>
@@ -127,7 +127,8 @@ export default function GraphSection({ items, autoRun = true }: Props) {
               </tbody>
             </table>
           </div>
-          <div className={styles.graphWrap}>
+          <div className={styles.graphColumn}>
+            <div className={styles.graphWrap}>
             <ForceGraph2D
               graphData={{ nodes: graph.nodes, links: allLinks }}
               width={360}
@@ -147,10 +148,8 @@ export default function GraphSection({ items, autoRun = true }: Props) {
                 return links >= 2 ? '#8b7cb8' : '#b8a9e0';
               }}
             />
-          </div>
-        </div>
-
-        <div className={styles.manualSection}>
+            </div>
+            <div className={styles.manualSection}>
           <h3>연결망 직접 추가</h3>
           <p className={styles.manualHint}>활동 A → 활동 B를 선택하고 연결 이유를 입력한 뒤 추가하세요.</p>
           <div className={styles.manualForm}>
@@ -207,6 +206,8 @@ export default function GraphSection({ items, autoRun = true }: Props) {
               })}
             </ul>
           )}
+            </div>
+          </div>
         </div>
         </>
       )}

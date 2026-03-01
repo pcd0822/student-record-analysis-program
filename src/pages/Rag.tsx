@@ -4,9 +4,27 @@ import type { DriveFileInfo } from '@/api/drive';
 import styles from './Rag.module.css';
 
 const DRIVE_FILE_URL = '/.netlify/functions/drive-file';
+const STORAGE_KEY = 'rag-drive-folder-link';
+
+function loadStoredLink(): string {
+  try {
+    return localStorage.getItem(STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function saveStoredLink(link: string) {
+  try {
+    if (link.trim()) localStorage.setItem(STORAGE_KEY, link.trim());
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 export default function Rag() {
-  const [folderLink, setFolderLink] = useState('');
+  const [folderLink, setFolderLink] = useState(loadStoredLink);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [files, setFiles] = useState<DriveFileInfo[]>([]);
@@ -25,6 +43,7 @@ export default function Rag() {
     try {
       const result = await fetchDriveFolder(link);
       setFiles(result.files || []);
+      saveStoredLink(link);
       if (!result.files?.length && result.fileCount === 0) {
         setError('폴더에 참고할 문서가 없거나, 폴더를 서비스 계정과 공유해 주세요.');
       }

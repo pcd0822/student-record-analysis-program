@@ -18,8 +18,20 @@ function isNeisPlusFormat(html: string): boolean {
   );
 }
 
-/** title 속성으로 쓰이는 창의적 체험활동 영역 값 (정확히 일치) */
+/** title 속성으로 쓰이는 창의적 체험활동 영역 값 (공백 포함 변형 지원) */
 const TITLE_ACTIVITY_AREAS = ['자율활동', '동아리활동', '봉사활동', '진로활동'] as const;
+const TITLE_ACTIVITY_VARIANTS: Record<string, string> = {
+  '자율활동': '자율활동', '자율 활동': '자율활동',
+  '동아리활동': '동아리활동', '동아리 활동': '동아리활동',
+  '봉사활동': '봉사활동', '봉사 활동': '봉사활동',
+  '진로활동': '진로활동', '진로 활동': '진로활동',
+};
+
+function normalizeTitleToArea(val: string): string | null {
+  const t = val.trim();
+  if (TITLE_ACTIVITY_AREAS.includes(t as (typeof TITLE_ACTIVITY_AREAS)[number])) return t;
+  return TITLE_ACTIVITY_VARIANTS[t] || null;
+}
 
 /** 창의적 체험활동 하위 영역 매칭: 공백/표기 변형 포함 */
 const CREATIVE_ACTIVITY_PATTERNS: { key: string; patterns: string[] }[] = [
@@ -43,12 +55,12 @@ function inferCreativeAreaFromRow(tr: Element): string | null {
   return matchCreativeActivityArea(rowText, rowText);
 }
 
-/** 요소나 그 이전 형제 tr에서 title="자율활동" 등 영역 속성 추출 */
+/** 요소나 그 이전 형제 tr에서 title="자율활동" 등 영역 속성 추출 (공백 변형 지원) */
 function getAreaFromTitleAttribute(tr: Element): string | null {
   const check = (row: Element): string | null => {
     for (const el of row.querySelectorAll('[title]')) {
-      const t = (el.getAttribute('title') || '').trim();
-      if (TITLE_ACTIVITY_AREAS.includes(t as (typeof TITLE_ACTIVITY_AREAS)[number])) return t;
+      const area = normalizeTitleToArea(el.getAttribute('title') || '');
+      if (area) return area;
     }
     return null;
   };
@@ -229,20 +241,25 @@ export function parseNeisPlusHtml(html: string): RecordItem[] {
     }
   });
 
-  // 3) title="자율활동", title="동아리활동" 등: 해당 title 뒤(DOM 순서)의 .wsBs를 해당 영역으로 수집 (누락 방지)
-  const titleSelectors = TITLE_ACTIVITY_AREAS.map((a) => `[title="${a}"]`).join(', ');
+  // 3) title="자율활동", title="자율 활동" 등: 해당 title 뒤(DOM 순서)의 .wsBs를 해당 영역으로 수집 (누락 방지)
+  const titleSelectors = [
+    '[title="자율활동"]', '[title="자율 활동"]',
+    '[title="동아리활동"]', '[title="동아리 활동"]',
+    '[title="봉사활동"]', '[title="봉사 활동"]',
+    '[title="진로활동"]', '[title="진로 활동"]',
+  ].join(', ');
   const allTitleEls = Array.from(doc.querySelectorAll(titleSelectors));
   allTitleEls.forEach((titleEl) => {
-    const area = (titleEl.getAttribute('title') || '').trim();
+    const area = normalizeTitleToArea(titleEl.getAttribute('title') || '');
     if (!area) return;
     const root = titleEl.closest('table') || doc.body;
     const nextSectionTitle = allTitleEls.find(
-      (other) => other !== titleEl && root.contains(other) && titleEl.compareDocumentPosition(other) === Node.DOCUMENT_POSITION_FOLLOWING
+      (other) => other !== titleEl && root.contains(other) && (titleEl.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
     );
     const allWsBs = Array.from(root.querySelectorAll('.wsBs'));
     const afterTitle = allWsBs.filter((el) => {
-      if (titleEl.compareDocumentPosition(el) !== Node.DOCUMENT_POSITION_FOLLOWING) return false;
-      if (nextSectionTitle && nextSectionTitle.compareDocumentPosition(el) === Node.DOCUMENT_POSITION_FOLLOWING) return false;
+      if ((titleEl.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) === 0) return false;
+      if (nextSectionTitle && (nextSectionTitle.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0) return false;
       return true;
     });
     afterTitle.forEach((wsBs) => {
@@ -265,6 +282,48 @@ export function parseNeisPlusHtml(html: string): RecordItem[] {
         });
       }
     });
+  });
+
+  // 4) th/td 텍스트가 "자율활동", "동아리활동" 등인 경우: 해당 행 이후의 .wsBs를 해당 영역으로 수집 (title 없이 셀 텍스트만 있는 구조)
+  const sectionHeaderTexts = ['자율활동', '자율 활동', '동아리활동', '동아리 활동', '봉사활동', '봉사 활동', '진로활동', '진로 활동'];
+  const textToArea: Record<string, string> = { '자율활동': '자율활동', '자율 활동': '자율활동', '동아리활동': '동아리활동', '동아리 활동': '동아리활동', '봉사활동': '봉사활동', '봉사 활동': '봉사활동', '진로활동': '진로활동', '진로 활동': '진로활동' };
+  doc.querySelectorAll('table tr').forEach((tr) => {
+    let rowArea: string | null = null;
+    tr.querySelectorAll('th, td').forEach((cell) => {
+      const t = (cell.textContent || '').trim();
+      if (sectionHeaderTexts.includes(t)) rowArea = textToArea[t] ?? t;
+    });
+    if (!rowArea) return;
+    const table = tr.closest('table');
+    if (!table) return;
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const startIdx = rows.indexOf(tr);
+    if (startIdx < 0) return;
+    for (let i = startIdx; i < rows.length; i++) {
+      const r = rows[i];
+      if (i > startIdx) {
+        const nextHeader = r.querySelectorAll('th, td');
+        for (const c of nextHeader) {
+          const ct = (c.textContent || '').trim();
+          if (sectionHeaderTexts.includes(ct)) { rowArea = textToArea[ct] ?? ct; break; }
+        }
+      }
+      r.querySelectorAll('.wsBs').forEach((wsBs) => {
+        const text = wsBs.textContent?.trim();
+        if (!text || text.length < MIN_CONTENT_LENGTH) return;
+        const key = text.slice(0, 300);
+        if (seen.has(key)) return;
+        seen.add(key);
+        const parts = splitBySubjects(text);
+        for (const part of parts) {
+          const content = part.body || text;
+          const contentKey = content.slice(0, 300);
+          if (seen.has(contentKey)) continue;
+          seen.add(contentKey);
+          items.push({ area: rowArea!, label: rowArea!, content, order: items.length + 1 });
+        }
+      });
+    }
   });
 
   return items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));

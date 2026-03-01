@@ -56,10 +56,8 @@ function extractTextNodes(html: string): { text: string; context: string }[] {
     const el = node as Element;
     const tag = el.tagName.toLowerCase();
     const labels = [...parentLabels];
-    const titleVal = el.getAttribute?.('title')?.trim();
-    if (titleVal && (titleVal === '자율활동' || titleVal === '동아리활동' || titleVal === '봉사활동' || titleVal === '진로활동')) {
-      labels.push(titleVal);
-    }
+    const titleArea = el.getAttribute?.('title') ? getAreaFromTitleAttr(el.getAttribute('title')) : null;
+    if (titleArea) labels.push(titleArea);
     if (['th', 'td', 'caption', 'h1', 'h2', 'h3', 'h4', 'strong', 'b'].includes(tag)) {
       const t = el.textContent?.trim();
       if (t) labels.push(t);
@@ -87,13 +85,25 @@ function getActivityTypeFromCell(cellText: string): string | null {
 }
 
 const TITLE_ACTIVITY_VALUES = ['자율활동', '동아리활동', '봉사활동', '진로활동'] as const;
+const TITLE_TO_AREA: Record<string, string> = {
+  '자율활동': '자율활동', '자율 활동': '자율활동',
+  '동아리활동': '동아리활동', '동아리 활동': '동아리활동',
+  '봉사활동': '봉사활동', '봉사 활동': '봉사활동',
+  '진로활동': '진로활동', '진로 활동': '진로활동',
+};
 
-/** tr 또는 이전 형제 tr에서 title="자율활동" 등 영역 속성 추출 */
+function getAreaFromTitleAttr(val: string): string | null {
+  const t = val.trim();
+  if (TITLE_ACTIVITY_VALUES.includes(t as (typeof TITLE_ACTIVITY_VALUES)[number])) return t;
+  return TITLE_TO_AREA[t] ?? null;
+}
+
+/** tr 또는 이전 형제 tr에서 title="자율활동" 등 영역 속성 추출 (공백 변형 지원) */
 function getContextFromTitleAttr(tr: Element): string | null {
   const check = (row: Element): string | null => {
     for (const el of row.querySelectorAll('[title]')) {
-      const t = (el.getAttribute('title') || '').trim();
-      if (TITLE_ACTIVITY_VALUES.includes(t as (typeof TITLE_ACTIVITY_VALUES)[number])) return t;
+      const area = getAreaFromTitleAttr(el.getAttribute('title') || '');
+      if (area) return area;
     }
     return null;
   };
@@ -122,10 +132,8 @@ function extractFromTables(doc: Document): { text: string; context: string }[] {
       const contentCells: string[] = [];
       cells.forEach((cell) => {
         const el = cell as Element;
-        const titleAttr = el.getAttribute?.('title')?.trim();
-        if (titleAttr && TITLE_ACTIVITY_VALUES.includes(titleAttr as (typeof TITLE_ACTIVITY_VALUES)[number])) {
-          rowContext = titleAttr;
-        }
+        const titleArea = el.getAttribute?.('title') ? getAreaFromTitleAttr(el.getAttribute('title')) : null;
+        if (titleArea) rowContext = titleArea;
         const t = cell.textContent?.trim() || '';
         const asActivity = getActivityTypeFromCell(t);
         const isTh = cell.tagName.toLowerCase() === 'th';

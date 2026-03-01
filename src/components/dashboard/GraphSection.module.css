@@ -73,6 +73,13 @@
   align-items: start;
 }
 
+.graphColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
 @media (max-width: 700px) {
   .graphLayout {
     grid-template-columns: 1fr;
@@ -136,9 +143,8 @@
   flex-shrink: 0;
 }
 
-/* 연결망 직접 추가 섹션 */
+/* 연결망 직접 추가 섹션 - 그래프 뷰 바로 아래 */
 .manualSection {
-  margin-top: 1.25rem;
   padding: 1rem;
   background: #f8fafc;
   border-radius: 8px;
