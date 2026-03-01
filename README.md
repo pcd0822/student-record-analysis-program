@@ -78,7 +78,7 @@ netlify dev
 4. 참고할 **Drive 폴더**를 서비스 계정 이메일(`xxx@프로젝트명.iam.gserviceaccount.com`)과 **"뷰어"**로 공유.
 5. 대시보드 역량 섹션에서 해당 폴더의 "공유하기" 링크(예: `https://drive.google.com/drive/folders/xxxx`)를 참고 자료 칸에 붙여넣고 "다시 분석" 실행.
 
-지원 형식: Google Docs(문서), 텍스트/CSV/Markdown 파일. PDF·이미지는 제외됩니다.
+지원 형식: Google Docs(문서), 텍스트/CSV/Markdown, **PDF**. (이미지·동영상은 제외)
 
 ## 3단계 구현 내용
 

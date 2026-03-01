@@ -5,6 +5,7 @@
  */
 
 const { google } = require('googleapis');
+const pdfParse = require('pdf-parse');
 
 const MAX_TOTAL_CHARS = 120000;
 const DRIVE_FOLDER_URL_PATTERN = /drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/;
@@ -70,6 +71,16 @@ async function getFileText(drive, fileId, mimeType) {
     }, { responseType: 'text' });
     return (res.data && typeof res.data === 'string') ? res.data : String(res.data || '');
   }
+  if (mimeType === 'application/pdf') {
+    const res = await drive.files.get({
+      fileId,
+      alt: 'media',
+    }, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(res.data || []);
+    if (buffer.length === 0) return '';
+    const data = await pdfParse(buffer);
+    return (data && data.text) ? data.text : '';
+  }
   return '';
 }
 
@@ -108,6 +119,7 @@ exports.handler = async (event) => {
       'text/plain',
       'text/csv',
       'text/markdown',
+      'application/pdf',
     ];
 
     for (const file of files) {
